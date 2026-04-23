@@ -1,42 +1,38 @@
-"""
-primehelix — unified console toolkit for prime number theory,
-integer factorization, and geometric number exploration.
-"""
 from __future__ import annotations
-import time
 import sys
+import csv
 
 import click
 from rich.console import Console
 from rich.table import Table
-from primehelix.display.json_output import build_json_result, print_json
+
+from primehelix.display.json_output import (
+    build_json_result,
+    print_json,
+    structure_summary,
+)
 
 console = Console()
 
 
-@click.group()
-@click.version_option("0.1.1", prog_name="primehelix")
+@click.group(help="""
+primehelix — structural analysis for integers
+
+Explore how numbers are built, not just what they are.
+
+Examples:
+  primehelix classify 1300039 --coil --json
+  primehelix structure-scan --start 10 --stop 100 --json
+  primehelix compare-ranges --a-start 10 --a-stop 20 --b-start 20 --b-stop 30 --top-delta 5
+""")
+@click.version_option("0.1.2", prog_name="primehelix")
 def main():
-    """
-    primehelix: prime theory, factorization, and geometric number exploration.
+    pass
 
-    \b
-    Commands:
-      classify        Classify n as prime / semiprime / composite
-      factor          Full factoring pipeline (trial→p-1→p+1→rho→ecm→qs)
-      coil            Conical helix footprint for semiprimes
-      bitbucket       Bit-bucket placement and prime density analysis
-      scan            Wheel-accelerated range scanner to CSV
-      structure-scan  Aggregate structural identities across a range
-      ecm             Lenstra ECM — elliptic curve factoring
-      qs              Quadratic Sieve factoring
 
-    \b
-    Output modes:
-      default    Rich human-readable console output
-      --json     Machine-readable JSON for scripting and automation
-    """
-
+# -----------------------------
+# helpers
+# -----------------------------
 
 def _print_residue_profile(residue: dict):
     table = Table(title="residue profile")
@@ -57,421 +53,343 @@ def _print_structure_summary(summary: dict, limit: int = 20):
     table.add_column("structure")
     table.add_column("count", justify="right")
     table.add_column("percent", justify="right")
+    table.add_column("histogram")
+
+    max_count = max(counts.values()) if counts else 1
 
     for label, count in counts.most_common(limit):
         pct = (count / total * 100.0) if total else 0.0
-        table.add_row(label, str(count), f"{pct:.2f}%")
+        bar_len = int((count / max_count) * 30)
+        bar = "█" * bar_len
+        table.add_row(label, str(count), f"{pct:.2f}%", bar)
 
     console.print(table)
     console.print(f"[dim]total numbers scanned: {total}[/dim]")
 
 
-@main.command()
-@click.argument("n", type=str)
-@click.option("--coil", is_flag=True, help="Show conical helix footprint (semiprimes only)")
-@click.option("--tangent", is_flag=True, help="Show tangent-split diagnostics")
-@click.option("--residue", "show_residue", is_flag=True, help="Show arithmetic residue-family profile")
-@click.option("--budget", default=10000, show_default=True, help="Time budget in ms")
-@click.option("--json", "as_json", is_flag=True, help="Output machine-readable JSON")
-def classify(n: str, coil: bool, tangent: bool, show_residue: bool, budget: int, as_json: bool):
-    """
-    Classify N as prime, semiprime, or composite.
+def _matches_filters(
+    classification: str,
+    label: str,
+    only_classification: str | None,
+    only_structure: str | None,
+) -> bool:
+    if only_classification and classification.lower() != only_classification.lower():
+        return False
+    if only_structure and only_structure.lower() not in label.lower():
+        return False
+    return True
 
-    Use --json for machine-readable output.
-    Use --coil with semiprimes to include geometric structure.
-    Use --residue to include arithmetic family profiling.
-    """
+
+def _summarize_filtered_range(
+    start: int,
+    stop: int,
+    budget: int,
+    only_classification: str | None = None,
+    only_structure: str | None = None,
+):
+    from collections import Counter
     from .core.factor import classify as do_classify
-    from .display.output import print_classify, print_coil, print_tangent
     from .geometry.residue import residue_profile
 
-    try:
-        N = int(n.strip().replace(",", "").replace("_", ""))
-    except ValueError:
-        console.print("[red]Error:[/red] N must be an integer.")
-        sys.exit(1)
+    counts = Counter()
+    total = 0
 
-    if N < 0:
-        console.print("[red]Error:[/red] N must be non-negative.")
-        sys.exit(1)
+    for n in range(start, stop):
+        classification, result = do_classify(n, budget_ms=budget)
+        residue = residue_profile(n, result.factors, classification=classification)
 
-    classification, result = do_classify(N, budget_ms=budget)
-
-    residue = residue_profile(N, result.factors, classification=classification)
-
-    if as_json:
-        coil_data = None
-
-        if coil and classification.lower() == "semiprime":
+        coil = None
+        if classification.lower() == "semiprime":
             from .geometry.coil import coil_footprint
             primes = sorted(result.factors.keys())
             if len(primes) == 2:
-                coil_data = coil_footprint(N, primes[0], primes[1])
-            elif len(primes) == 1:
-                p = primes[0]
-                coil_data = coil_footprint(N, p, p)
+                coil = coil_footprint(n, primes[0], primes[1])
 
+        label = structure_summary(classification, coil=coil, residue=residue)
+
+        if not _matches_filters(classification, label, only_classification, only_structure):
+            continue
+
+        counts[label] += 1
+        total += 1
+
+    return {
+        "total": total,
+        "counts": counts,
+    }
+
+
+def _compare_rows(summary_a: dict, summary_b: dict):
+    counts_a = summary_a["counts"]
+    counts_b = summary_b["counts"]
+    total_a = summary_a["total"]
+    total_b = summary_b["total"]
+
+    labels = set(counts_a.keys()) | set(counts_b.keys())
+    rows = []
+
+    for s in labels:
+        a = counts_a.get(s, 0)
+        b = counts_b.get(s, 0)
+
+        ap = (a / total_a * 100.0) if total_a else 0.0
+        bp = (b / total_b * 100.0) if total_b else 0.0
+        delta = bp - ap
+
+        if ap == 0.0 and bp == 0.0:
+            ratio = "1.00x"
+        elif ap == 0.0:
+            ratio = "new"
+        else:
+            ratio = f"{(bp / ap):.2f}x"
+
+        rows.append(
+            {
+                "structure": s,
+                "a_count": a,
+                "a_percent": ap,
+                "b_count": b,
+                "b_percent": bp,
+                "delta": delta,
+                "ratio": ratio,
+            }
+        )
+
+    return rows
+
+
+def _print_compare_ranges(
+    summary_a: dict,
+    summary_b: dict,
+    label_a: str,
+    label_b: str,
+    limit: int = 20,
+    top_delta: int | None = None,
+):
+    total_a = summary_a["total"]
+    total_b = summary_b["total"]
+    rows = _compare_rows(summary_a, summary_b)
+
+    if top_delta:
+        rows = sorted(
+            rows,
+            key=lambda r: (-abs(r["delta"]), r["structure"].lower())
+        )[:top_delta]
+    else:
+        rows = sorted(
+            rows,
+            key=lambda r: (
+                -(r["a_count"] + r["b_count"]),
+                r["structure"].lower(),
+            )
+        )[:limit]
+
+    title = "range comparison"
+    if top_delta:
+        title += f" | top delta {top_delta}"
+
+    table = Table(title=title)
+    table.add_column("structure")
+    table.add_column(f"{label_a} count", justify="right")
+    table.add_column(f"{label_a} %", justify="right")
+    table.add_column(f"{label_b} count", justify="right")
+    table.add_column(f"{label_b} %", justify="right")
+    table.add_column("delta", justify="right")
+    table.add_column("ratio", justify="right")
+
+    for row in rows:
+        table.add_row(
+            row["structure"],
+            str(row["a_count"]),
+            f'{row["a_percent"]:.2f}%',
+            str(row["b_count"]),
+            f'{row["b_percent"]:.2f}%',
+            f'{row["delta"]:+.2f}%',
+            row["ratio"],
+        )
+
+    console.print(table)
+    console.print(f"[dim]{label_a} total: {total_a}[/dim]")
+    console.print(f"[dim]{label_b} total: {total_b}[/dim]")
+
+
+# -----------------------------
+# classify
+# -----------------------------
+
+@main.command()
+@click.argument("n", type=str)
+@click.option("--coil", is_flag=True)
+@click.option("--residue", is_flag=True)
+@click.option("--json", "as_json", is_flag=True)
+def classify(n, coil, residue, as_json):
+    from .core.factor import classify as do_classify
+    from .geometry.residue import residue_profile
+    from .geometry.coil import coil_footprint
+
+    N = int(n)
+    classification, result = do_classify(N)
+    res = residue_profile(N, result.factors, classification=classification)
+
+    coil_data = None
+    if coil and classification == "semiprime":
+        primes = sorted(result.factors.keys())
+        if len(primes) == 2:
+            coil_data = coil_footprint(N, primes[0], primes[1])
+
+    if as_json:
         payload = build_json_result(
             result,
             command="classify",
             classification=classification,
             coil=coil_data,
-            residue=residue,
+            residue=res,
         )
         print_json(payload)
         return
 
-    print_classify(N, classification, result)
+    console.print(f"{N} → {classification}")
+    if residue:
+        _print_residue_profile(res)
 
-    if show_residue:
-        _print_residue_profile(residue)
 
-    if coil and classification.lower() == "semiprime":
-        from .geometry.coil import coil_footprint
-        primes = sorted(result.factors.keys())
-        if len(primes) == 2:
-            fp = coil_footprint(N, primes[0], primes[1])
-            print_coil(fp)
-        elif len(primes) == 1:
-            p = primes[0]
-            fp = coil_footprint(N, p, p)
-            print_coil(fp)
-
-    if tangent:
-        from .geometry.tangent import equal_split, tangent_split, ideal_split
-        eq = equal_split(N)
-        ts = tangent_split(N)
-        ideal = None
-        if classification.lower() == "semiprime":
-            flat = []
-            for p, e in result.factors.items():
-                flat.extend([p] * e)
-            if len(flat) == 2:
-                ideal = ideal_split(N, flat[0], flat[1])
-        print_tangent(eq, ts, ideal)
-
+# -----------------------------
+# factor
+# -----------------------------
 
 @main.command()
 @click.argument("n", type=str)
-@click.option("--budget", default=10000, show_default=True, help="Time budget in ms")
-@click.option(
-    "--method",
-    type=click.Choice(["auto", "trial", "rho", "pm1", "ecm", "qs"]),
-    default="auto",
-    show_default=True,
-)
-@click.option("--verbose", is_flag=True, help="Show pipeline steps")
-@click.option("--json", "as_json", is_flag=True, help="Output machine-readable JSON")
-def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
-    """
-    Factor N using the full pipeline or a specific method.
+@click.option("--json", "as_json", is_flag=True)
+def factor(n, as_json):
+    from .core.factor import factor as do_factor
 
-    Use --verbose to show pipeline steps.
-    Use --json for machine-readable output.
-    """
-    from .display.output import print_factor
-
-    try:
-        N = int(n.strip().replace(",", "").replace("_", ""))
-    except ValueError:
-        console.print("[red]Error:[/red] N must be an integer.")
-        sys.exit(1)
-
-    t0 = time.monotonic()
-
-    if method == "auto":
-        from .core.factor import factor as do_factor
-        result = do_factor(N, budget_ms=budget)
-
-    elif method == "trial":
-        from .core.primes import _SMALL_PRIMES
-        from .core.factor import FactorResult
-
-        factors = {}
-        tmp = N
-        for p in _SMALL_PRIMES:
-            while tmp % p == 0:
-                factors[p] = factors.get(p, 0) + 1
-                tmp //= p
-        if tmp > 1:
-            factors[tmp] = factors.get(tmp, 0) + 1
-
-        result = FactorResult(
-            n=N,
-            factors=factors,
-            method="trial",
-            elapsed_ms=(time.monotonic() - t0) * 1000,
-            complete=True,
-        )
-
-    elif method == "rho":
-        from .core.rho import pollard_rho
-        from .core.factor import FactorResult
-
-        f = pollard_rho(N, timeout_ms=budget)
-        if f:
-            result = FactorResult(
-                n=N,
-                factors={f: 1, N // f: 1},
-                method="rho",
-                elapsed_ms=(time.monotonic() - t0) * 1000,
-                complete=True,
-            )
-        else:
-            result = FactorResult(
-                n=N,
-                factors={N: 1},
-                method="rho",
-                elapsed_ms=(time.monotonic() - t0) * 1000,
-                complete=False,
-            )
-
-    elif method == "pm1":
-        from .core.pm1 import pollard_pm1
-        from .core.factor import FactorResult
-
-        f = pollard_pm1(N)
-        if f:
-            result = FactorResult(
-                n=N,
-                factors={f: 1, N // f: 1},
-                method="p-1",
-                elapsed_ms=(time.monotonic() - t0) * 1000,
-                complete=True,
-            )
-        else:
-            result = FactorResult(
-                n=N,
-                factors={N: 1},
-                method="p-1",
-                elapsed_ms=(time.monotonic() - t0) * 1000,
-                complete=False,
-            )
-
-    elif method == "ecm":
-        from .core.ecm import ecm as do_ecm
-        from .core.factor import FactorResult
-
-        f = do_ecm(N, timeout_ms=budget)
-        if f:
-            result = FactorResult(
-                n=N,
-                factors={f: 1, N // f: 1},
-                method="ecm",
-                elapsed_ms=(time.monotonic() - t0) * 1000,
-                complete=True,
-            )
-        else:
-            result = FactorResult(
-                n=N,
-                factors={N: 1},
-                method="ecm",
-                elapsed_ms=(time.monotonic() - t0) * 1000,
-                complete=False,
-            )
-
-    elif method == "qs":
-        from .core.qs import quadratic_sieve
-        from .core.factor import FactorResult
-
-        f = quadratic_sieve(N)
-        if f:
-            result = FactorResult(
-                n=N,
-                factors={f: 1, N // f: 1},
-                method="qs",
-                elapsed_ms=(time.monotonic() - t0) * 1000,
-                complete=True,
-            )
-        else:
-            result = FactorResult(
-                n=N,
-                factors={N: 1},
-                method="qs",
-                elapsed_ms=(time.monotonic() - t0) * 1000,
-                complete=False,
-            )
+    N = int(n)
+    result = do_factor(N)
 
     if as_json:
-        payload = build_json_result(result, command="factor")
-        print_json(payload)
+        print_json(build_json_result(result, command="factor"))
         return
 
-    print_factor(result, verbose=verbose)
+    console.print(result)
 
+
+# -----------------------------
+# structure-scan
+# -----------------------------
 
 @main.command("structure-scan")
 @click.option("--start", required=True, type=int)
 @click.option("--stop", required=True, type=int)
-@click.option("--budget", default=2000, show_default=True, help="Per-number budget in ms")
-@click.option("--limit", default=20, show_default=True, help="Maximum number of structure rows to show")
-@click.option("--json", "as_json", is_flag=True, help="Output machine-readable JSON")
-def structure_scan(start: int, stop: int, budget: int, limit: int, as_json: bool):
-    """
-    Aggregate structural identities across a numeric range [START, STOP).
-    """
-    from .core.factor import classify as do_classify
-    from .scan.structure_summary import summarize_range
-
-    if stop <= start:
-        console.print("[red]Error:[/red] stop must be greater than start.")
-        sys.exit(1)
-
-    summary = summarize_range(start, stop, classify_fn=do_classify, budget_ms=budget)
+@click.option("--json", "as_json", is_flag=True)
+@click.option("--only-classification", type=str)
+@click.option("--only-structure", type=str)
+def structure_scan(start, stop, as_json, only_classification, only_structure):
+    summary = _summarize_filtered_range(
+        start,
+        stop,
+        budget=2000,
+        only_classification=only_classification,
+        only_structure=only_structure,
+    )
 
     if as_json:
         payload = {
             "command": "structure-scan",
             "start": start,
             "stop": stop,
-            "budget_ms": budget,
             "total": summary["total"],
             "counts": dict(summary["counts"]),
         }
+        if only_classification:
+            payload["only_classification"] = only_classification
+        if only_structure:
+            payload["only_structure"] = only_structure
         print_json(payload)
         return
 
-    _print_structure_summary(summary, limit=limit)
+    _print_structure_summary(summary)
 
 
-@main.command()
-@click.argument("n", type=str)
-@click.option("--signature", is_flag=True, help="Show SHA-256 signatures")
-@click.option("--ascii", "ascii_mode", is_flag=True, help="Show ASCII helix visualization")
-@click.option("--r0", default=1.0, show_default=True)
-@click.option("--alpha", default=0.0125, show_default=True)
-@click.option("--beta", default=0.005, show_default=True)
-@click.option("--L", default=360.0, show_default=True)
-def coil(
-    n: str,
-    signature: bool,
-    ascii_mode: bool,
-    r0: float,
-    alpha: float,
-    beta: float,
-    l: float,
+# -----------------------------
+# compare-ranges
+# -----------------------------
+
+@main.command("compare-ranges")
+@click.option("--a-start", required=True, type=int)
+@click.option("--a-stop", required=True, type=int)
+@click.option("--b-start", required=True, type=int)
+@click.option("--b-stop", required=True, type=int)
+@click.option("--top-delta", type=int)
+@click.option("--json", "as_json", is_flag=True)
+@click.option("--only-classification", type=str)
+@click.option("--only-structure", type=str)
+def compare_ranges(
+    a_start,
+    a_stop,
+    b_start,
+    b_stop,
+    top_delta,
+    as_json,
+    only_classification,
+    only_structure,
 ):
-    """Show conical helix footprint for N (must be semiprime or provide factors)."""
-    from .core.factor import classify as do_classify
-    from .geometry.coil import coil_footprint
-    from .display.output import print_coil
+    summary_a = _summarize_filtered_range(
+        a_start,
+        a_stop,
+        budget=2000,
+        only_classification=only_classification,
+        only_structure=only_structure,
+    )
+    summary_b = _summarize_filtered_range(
+        b_start,
+        b_stop,
+        budget=2000,
+        only_classification=only_classification,
+        only_structure=only_structure,
+    )
 
-    try:
-        N = int(n.strip().replace(",", "").replace("_", ""))
-    except ValueError:
-        console.print("[red]Error:[/red] N must be an integer.")
-        sys.exit(1)
+    rows = _compare_rows(summary_a, summary_b)
+    if top_delta:
+        rows = sorted(
+            rows,
+            key=lambda r: (-abs(r["delta"]), r["structure"].lower())
+        )[:top_delta]
 
-    classification, result = do_classify(N)
+    if as_json:
+        payload = {
+            "command": "compare-ranges",
+            "a": {
+                "start": a_start,
+                "stop": a_stop,
+                "total": summary_a["total"],
+                "counts": dict(summary_a["counts"]),
+            },
+            "b": {
+                "start": b_start,
+                "stop": b_stop,
+                "total": summary_b["total"],
+                "counts": dict(summary_b["counts"]),
+            },
+            "rows": rows,
+        }
 
-    if classification.lower() == "prime":
-        console.print(f"[green]{N} is prime[/green] — no coil footprint (requires semiprime).")
+        if top_delta:
+            payload["top_delta"] = top_delta
+        if only_classification:
+            payload["only_classification"] = only_classification
+        if only_structure:
+            payload["only_structure"] = only_structure
+
+        print_json(payload)
         return
 
-    primes_flat = []
-    for p, e in result.factors.items():
-        primes_flat.extend([p] * e)
-    primes_flat.sort()
-
-    if len(primes_flat) < 2:
-        console.print("[yellow]Could not fully factor N within budget.[/yellow]")
-        return
-
-    p, q = primes_flat[0], primes_flat[-1]
-    fp = coil_footprint(N, p, q, r0=r0, alpha=alpha, beta=beta, L=l)
-
-    if ascii_mode:
-        from .display.ascii_helix import print_ascii_helix
-        print_ascii_helix(fp)
-        return
-
-    print_coil(fp, show_signature=signature)
-
-
-@main.command()
-@click.argument("n", type=str)
-@click.option("--density", is_flag=True, help="Show prime density table for nearby buckets")
-@click.option("--max-k", default=20, show_default=True, help="Max bit-length for density table")
-def bitbucket(n: str, density: bool, max_k: int):
-    """Show bit-bucket placement and prime density analysis for N."""
-    from .geometry.bitbucket import bit_bucket, prime_density_table
-    from .display.output import print_bitbucket
-
-    try:
-        N = int(n.strip().replace(",", "").replace("_", ""))
-    except ValueError:
-        console.print("[red]Error:[/red] N must be an integer.")
-        sys.exit(1)
-
-    bb = bit_bucket(N)
-    dt = None
-    if density:
-        effective_max = min(max_k, bb.k + 2)
-        dt = prime_density_table(max_k=effective_max)
-    print_bitbucket(bb, density_table=dt)
-
-
-@main.command()
-@click.option("--start", default=2, show_default=True, type=int)
-@click.option("--stop", required=True, type=int)
-@click.option("--out", default="scan.csv", show_default=True)
-@click.option("--mode", type=click.Choice(["thin", "full", "sampled"]), default="thin")
-@click.option("--no-resume", is_flag=True, help="Start fresh, don't resume")
-@click.option("--budget", default=2000, show_default=True, help="Per-number budget in ms")
-def scan(start: int, stop: int, out: str, mode: str, no_resume: bool, budget: int):
-    """Wheel-accelerated range scan from START to STOP, writing to CSV."""
-    from .scan.wheel import scan as do_scan
-
-    count = 0
-    for row in do_scan(start, stop, out, mode=mode, resume=not no_resume, budget_ms=budget):
-        count += 1
-        if count % 10000 == 0:
-            console.print(f"[dim]  scanned {count:,} numbers, last n={row['n']:,}[/dim]")
-
-    console.print(f"[green]Done.[/green] {count:,} numbers written to {out}")
-
-
-@main.command()
-@click.argument("n", type=str)
-@click.option("--B1", default=50000, show_default=True, type=int)
-@click.option("--curves", default=100, show_default=True, type=int)
-@click.option("--budget", default=10000, show_default=True, type=int, help="Time budget in ms")
-def ecm(n: str, b1: int, curves: int, budget: int):
-    """Lenstra ECM — elliptic curve factoring."""
-    from .core.ecm import ecm as do_ecm
-    from .display.output import print_ecm
-
-    try:
-        N = int(n.strip().replace(",", "").replace("_", ""))
-    except ValueError:
-        console.print("[red]Error:[/red] N must be an integer.")
-        sys.exit(1)
-
-    t0 = time.monotonic()
-    f = do_ecm(N, B1=b1, curves=curves, timeout_ms=budget)
-    elapsed = (time.monotonic() - t0) * 1000
-    print_ecm(N, f, elapsed, b1, curves)
-
-
-@main.command()
-@click.argument("n", type=str)
-@click.option("--B-scale", default=5.0, show_default=True, type=float, help="Factor-base size multiplier")
-def qs(n: str, b_scale: float):
-    """Quadratic Sieve — for hard semiprimes with no small factors."""
-    from .core.qs import quadratic_sieve
-    from .display.output import print_qs
-
-    try:
-        N = int(n.strip().replace(",", "").replace("_", ""))
-    except ValueError:
-        console.print("[red]Error:[/red] N must be an integer.")
-        sys.exit(1)
-
-    console.print(f"[dim]Running Quadratic Sieve on {len(str(N))}-digit number…[/dim]")
-    t0 = time.monotonic()
-    f = quadratic_sieve(N, B_scale=b_scale)
-    elapsed = (time.monotonic() - t0) * 1000
-    print_qs(N, f, elapsed)
+    _print_compare_ranges(
+        summary_a,
+        summary_b,
+        label_a=f"[{a_start}, {a_stop})",
+        label_b=f"[{b_start}, {b_stop})",
+        top_delta=top_delta,
+    )
 
 
 if __name__ == "__main__":
