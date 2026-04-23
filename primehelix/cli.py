@@ -84,7 +84,8 @@ def classify(n: str, coil: bool, tangent: bool, budget: int):
 @click.option("--budget", default=10000, show_default=True, help="Time budget in ms")
 @click.option("--method", type=click.Choice(["auto", "trial", "rho", "pm1", "ecm", "qs"]),
               default="auto", show_default=True)
-def factor(n: str, budget: int, method: str):
+@click.option("--verbose", is_flag=True, help="Show pipeline steps")
+def factor(n: str, budget: int, method: str, verbose: bool):
     """Factor N using the full pipeline or a specific method."""
     from .display.output import print_factor
 
@@ -158,7 +159,7 @@ def factor(n: str, budget: int, method: str):
             result = FactorResult(n=N, factors={N: 1}, method="qs",
                                   elapsed_ms=(time.monotonic()-t0)*1000, complete=False)
 
-    print_factor(result)
+    print_factor(result, verbose=verbose)
 
 
 @main.command()

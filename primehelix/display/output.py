@@ -48,7 +48,7 @@ def print_classify(n: int, classification: str, result) -> None:
             console.print(f"  [dim]·[/dim] {s}")
 
 
-def print_factor(result) -> None:
+def print_factor(result, verbose: bool = False) -> None:
     color = "green" if result.complete else "yellow"
     table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
     table.add_column("Field", style="dim")
@@ -63,7 +63,7 @@ def print_factor(result) -> None:
 
     console.print(Panel(table, title="[bold]factor[/bold]", border_style=color))
 
-    if result.steps:
+    if verbose and result.steps:
         console.print("[dim]Pipeline steps:[/dim]")
         for s in result.steps:
             console.print(f"  [dim]·[/dim] {s}")
