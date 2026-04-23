@@ -15,6 +15,8 @@ Every integer receives a compact **structure label** encoding classification, ge
 
 ![Semiprime structure distribution — [1, 10M)](docs/semiprime_1e7_structure.png)
 
+At 10M scale: **~79% of semiprimes are lopsided** (factors differ by more than 8 bits). Balanced, RSA-like semiprimes — where both factors have nearly equal bit-length — account for less than 1%. The bias compounds with scale: it was 73% at 1M and grows stronger, not weaker, as the range increases.
+
 All measurements below come from scanning [1, 1 000 000). Every command shown is fully reproducible.
 
 **At 1M scale:** ~73% of semiprimes are lopsided. At 10M that rises to ~79%. Balanced (RSA-like) semiprimes fall below 0.7%. The even-involved share nearly doubles under the lopsided constraint. This distribution strengthens — not randomizes — as the range grows.
