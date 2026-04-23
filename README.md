@@ -5,11 +5,59 @@
 [![CI](https://github.com/onojk/primehelix/actions/workflows/ci.yml/badge.svg)](https://github.com/onojk/primehelix/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Structural analysis for integers — explore how numbers are built, not just what they are.**
+**primehelix shows how structural constraints reshape integer distributions — beyond what naive prime-counting predicts.**
 
-Most number theory tools answer *what*: is this prime, what are the factors. primehelix also answers *how*: what arithmetic family does each factor belong to, how balanced is the factor pair, where does the number sit on a conical helix, and how do these structural patterns shift across large ranges.
+Every integer receives a compact **structure label** encoding classification, geometric balance, and residue-family membership into one token: `semiprime | lopsided | mod4_1x3`. Those labels are the common currency across all five commands: classify one number, scan a million, compare two ranges, track trends over time.
 
-Every integer gets a compact **structure label** — `semiprime | lopsided | mod4_1x3`, `prime | gaussian`, `composite` — that encodes classification, geometric balance, and residue-family membership into one scannable token. Those labels are the spine of the tool: classify one number, scan a million, compare two ranges, plot trends over time.
+---
+
+## Findings
+
+All measurements below come from scanning [1, 1 000 000). Every command shown is fully reproducible.
+
+### Lopsided semiprimes dominate — and grow more dominant with range
+
+In [1, 1M), semiprimes break into three balance tiers:
+
+| Balance tier | Share |
+|--------------|------:|
+| lopsided (factors differ by > 8 bits) | **73.2%** |
+| moderate | 25.9% |
+| balanced (RSA-like — factors nearly equal bit-length) | 0.80% |
+
+Balanced semiprimes are rarer than 1 in 125. As the range shifts from [1, 500k) to [500k, 1M), lopsided pairs gain share and moderate ones shrink — consistently across every mod4 residue family:
+
+| Structure | delta [1,500k) → [500k,1M) |
+|-----------|---------------------------:|
+| semiprime \| lopsided \| mod4_1x3 | +2.69% |
+| semiprime \| moderate \| mod4_1x3 | −2.05% |
+| semiprime \| lopsided \| mod4_3x3 | +1.51% |
+| semiprime \| moderate \| mod4_3x3 | −1.39% |
+
+The mechanism: small primes (2, 3, 5, 7, …) are reused repeatedly as the smaller factor of larger and larger semiprimes, widening the bit-gap with every step.
+
+### The lopsided constraint shifts residue families
+
+Filtering to lopsided semiprimes changes the mod4 pair distribution in a predictable direction:
+
+| Mod4 pair | All semiprimes | Lopsided only | Shift |
+|-----------|---------------:|-------------:|------:|
+| mod4_1x3 (mixed families) | 40.0% | 36.4% | −3.6 pp |
+| mod4_3x3 (both gaussian) | 23.7% | 22.9% | −0.9 pp |
+| mod4_1x1 (both pythagorean) | 16.4% | 13.7% | −2.7 pp |
+| even-involved (factor of 2) | 19.8% | **27.0%** | **+7.2 pp** |
+
+The lopsided bucket absorbs all 2×p semiprimes — any product of 2 and a large prime is structurally lopsided by definition. This inflates the even-involved share and proportionally compresses every odd pair class.
+
+### Primes split evenly by residue family
+
+Among 78,498 primes in [1, 1M): 50.09% gaussian (p ≡ 3 mod 4), 49.91% pythagorean (p ≡ 1 mod 4). The near-perfect symmetry is consistent with Dirichlet's theorem and stable across ranges.
+
+```bash
+primehelix structure-scan --start 1 --stop 1000000 --json
+primehelix compare-ranges --a-start 1 --a-stop 500000 --b-start 500000 --b-stop 1000000 \
+  --only-classification semiprime --top-delta 6 --json
+```
 
 ---
 
@@ -20,80 +68,21 @@ pip install primehelix                # core: classify, factor, scan, compare
 pip install 'primehelix[plot]'        # add matplotlib for --plot
 ```
 
-On Linux, GMP is required for full performance (gmpy2):
+On Linux, install GMP first for full performance (gmpy2):
 ```bash
 sudo apt install libgmp-dev libmpfr-dev libmpc-dev
 pip install primehelix
 ```
 
-```bash
-primehelix classify 1300039 --helix
-primehelix classify 1300039 --json
-primehelix structure-scan --start 1 --stop 100000
-primehelix compare-ranges --a-start 1 --a-stop 50000 --b-start 50000 --b-stop 100000 --top-delta 6
-```
-
-**From source:**
-```bash
-git clone https://github.com/onojk/primehelix.git
-cd primehelix
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-```
-
----
-
-## Core concepts
-
-### Structure labels
-
-Every integer is assigned a structure label composed of up to three parts joined by ` | `:
-
-```
-semiprime | lopsided | mod4_1x3
-prime | gaussian
-composite
-invalid
-```
-
-| Part | What it encodes |
-|------|----------------|
-| Classification | `prime`, `semiprime`, `composite`, `invalid` |
-| Balance | `balanced`, `moderate`, `lopsided` — based on bit-length gap between factors |
-| Residue family | `mod4_1x3`, `mod4_3x3`, `pythagorean`, `gaussian`, etc. |
-
-These labels are stable strings — safe to grep, aggregate, diff between ranges, and track over time.
-
-### Residue families
-
-Odd primes split into two families by their residue mod 4:
-
-- **Pythagorean primes** (p ≡ 1 mod 4) — expressible as a sum of two squares
-- **Gaussian primes** (p ≡ 3 mod 4) — remain prime in the Gaussian integers
-
-Semiprimes inherit a **mod4 pair** from their two factors: `1x1`, `1x3`, or `3x3`. This pair is stable under the prime number theorem — its distribution converges predictably as range grows, and shifts between ranges are measurable.
-
-### Conical helix geometry
-
-Integers are mapped to points on a conical helix in 3D:
-
-```
-r(n) = r₀ + α·n      radius grows with n
-θ(n) = 2π·n / L      angular position
-z(n) = β·n           vertical position
-```
-
-For a semiprime `n = p·q`, the arc distances between `n`, `q`, `p`, and `1` form a geometric footprint. The **bit-gap** between the factors controls how the helix spreads — balanced RSA-like primes produce a symmetric shape; lopsided pairs compress one strand. The `--helix` flag renders this as an ASCII double-helix in the terminal.
-
 ---
 
 ## Commands
 
-### `classify` — classify and inspect one integer
+### `classify` — inspect one integer
 
 ```bash
 primehelix classify 1300039
-primehelix classify 1300039 --helix       # ASCII helix visualization
+primehelix classify 1300039 --helix       # ASCII double-helix visualization
 primehelix classify 1300039 --coil        # geometric footprint metrics
 primehelix classify 1300039 --residue     # full residue profile
 primehelix classify 1300039 --json        # machine-readable output
@@ -113,16 +102,7 @@ balance=87.696, bit_gap=13
                         *               +
                             +~~~~~~~*
                                 +
-                            +~~~~~~~*
-                          +           *
-                       *-----------------+
-                    *                       +
-                +-------------------------------*
-              +                                   *
-               *---------------------------------+
 ```
-
-The spread and compression of the helix reflect the actual factor structure — a balanced semiprime like 110000479000513 (= 10000019 × 11000027, bit_gap=0) produces a tight symmetric pattern; a lopsided one like 1300039 produces a wide expanding cone.
 
 **`--json` output:**
 
@@ -151,25 +131,12 @@ The spread and compression of the helix reflect the actual factor structure — 
 ```bash
 primehelix factor 2147483646
 primehelix factor 2147483646 --verbose    # show pipeline steps
-primehelix factor 2147483646 --json
 primehelix factor 2147483646 --json --verbose
 ```
 
 **Pipeline:** trial division → Pollard p−1 → Williams p+1 → Pollard Rho (Brent) → Lenstra ECM → Quadratic Sieve
 
-**Output:**
-```
-  n              │ 2147483646
-  factorization  │ 2 × 3^2 × 7 × 11 × 31 × 151 × 331
-  method         │ rho
-  complete       │ yes
-
-Pipeline steps (--verbose):
-  · trial: 2  · trial: 3  · trial: 3  · trial: 7
-  · trial: 11  · trial: 31  · rho: 151
-```
-
-Primality testing uses **Baillie–PSW** (Miller–Rabin base-2 + strong Lucas PRP) — deterministic for all 64-bit integers. Prime cofactors are always proven before the factorization is marked complete.
+Primality testing uses **Baillie–PSW** — deterministic for all 64-bit integers. `complete: true` means every factor is proven prime.
 
 ---
 
@@ -178,55 +145,24 @@ Primality testing uses **Baillie–PSW** (Miller–Rabin base-2 + strong Lucas P
 ```bash
 primehelix structure-scan --start 1 --stop 1000000
 primehelix structure-scan --start 1 --stop 1000000 --only-classification semiprime
+primehelix structure-scan --start 1 --stop 1000000 --profile   # show method distribution
 primehelix structure-scan --start 1 --stop 1000000 --json
 ```
 
-Scans every integer in `[start, stop)`, assigns a structure label, and returns counts with a histogram. Progress is shown on stderr for ranges over 10,000 numbers.
-
-**Output (abridged):**
-
-```
-              structure summary
- ┌────────────────────────────────┬────────┬────────┬──────────────────────┐
- │ structure                      │  count │percent │ histogram            │
- ├────────────────────────────────┼────────┼────────┼──────────────────────┤
- │ composite                      │ 531820 │ 53.18% │ ██████████████████████│
- │ prime | gaussian               │  87432 │  8.74% │ ████████             │
- │ prime | pythagorean            │  80251 │  8.03% │ ███████              │
- │ semiprime | moderate | mod4_1x3│  93114 │  9.31% │ ████████             │
- │ semiprime | lopsided | mod4_1x3│  ...   │  ...   │ ...                  │
- └────────────────────────────────┴────────┴────────┴──────────────────────┘
-```
+Scans every integer in `[start, stop)`, assigns a structure label, returns counts, histogram, and Shannon entropy of the distribution. Progress shown on stderr for ranges over 10,000.
 
 ---
 
-### `compare-ranges` — diff structure distributions between two ranges
+### `compare-ranges` — diff structure distributions
 
 ```bash
 primehelix compare-ranges \
-  --a-start 1 --a-stop 50000 \
-  --b-start 50000 --b-stop 100000 \
-  --top-delta 6
+  --a-start 1 --a-stop 500000 \
+  --b-start 500000 --b-stop 1000000 \
+  --only-classification semiprime --top-delta 6
 ```
 
-Shows which structure types grew or shrank most between two ranges, with counts, percentages, delta, and ratio.
-
-**Output:**
-
-```
-             range comparison | top delta 6
- ┌─────────────────────────────────┬───────┬───────┬───────┬───────┬───────┬───────┐
- │ structure                       │ [1,50k│  [1,  │[50k,  │ [50k, │ delta │ ratio │
- │                                 │ count │  50k% │100k)  │100k)% │       │       │
- ├─────────────────────────────────┼───────┼───────┼───────┼───────┼───────┼───────┤
- │ composite                       │ 32755 │ 65.5% │ 34273 │ 68.5% │ +3.0% │ 1.05x │
- │ semiprime | moderate | mod4_1x3 │  2203 │  4.4% │  1711 │  3.4% │ -0.9% │ 0.78x │
- │ prime | gaussian                │  2583 │  5.2% │  2225 │  4.5% │ -0.7% │ 0.86x │
- │ semiprime | lopsided | mod4_1x3 │  2376 │  4.8% │  2684 │  5.4% │ +0.6% │ 1.13x │
- └─────────────────────────────────┴───────┴───────┴───────┴───────┴───────┴───────┘
-```
-
-Use `--only-classification semiprime` to isolate one class. Use `--json` to pipe results downstream.
+Shows which structure labels gained or lost share between two ranges, with delta, ratio, and per-range entropy.
 
 ---
 
@@ -241,13 +177,36 @@ primehelix structure-time-series \
   --plot semiprime_ts.png
 ```
 
-Divides `[start, stop)` into overlapping or non-overlapping windows, computes structure distributions in each, selects the top-N series by aggregate weight, and plots them as a line chart. Omit `--plot` for a compact text summary instead.
+Divides `[start, stop)` into windows, computes structure distributions in each, and plots the top-N label series as a line chart. Omit `--plot` for a text summary.
 
 ---
 
-## JSON output
+## Structure labels
 
-`classify` and `factor` both support `--json`. The schema is stable across patch versions:
+Every integer gets a label of up to three parts joined by ` | `:
+
+```
+semiprime | lopsided | mod4_1x3
+prime | gaussian
+composite
+invalid
+```
+
+| Part | What it encodes |
+|------|----------------|
+| Classification | `prime`, `semiprime`, `composite`, `invalid` |
+| Balance | `balanced`, `moderate`, `lopsided` — bit-length gap between factors; semiprimes only |
+| Residue family | `mod4_1x3`, `mod4_3x3`, `pythagorean`, `gaussian`, etc. |
+
+Labels are **stable strings** — safe to grep, aggregate, diff between ranges, and use as dict keys across runs. The grammar is fixed: classification first, balance second (when present), residue family last.
+
+---
+
+## JSON schema
+
+All commands support `--json`. The schema is stable across patch versions.
+
+**`classify` and `factor`:**
 
 | Field | Present in | Notes |
 |-------|-----------|-------|
@@ -260,105 +219,33 @@ Divides `[start, stop)` into overlapping or non-overlapping windows, computes st
 | `method` | both | last algorithm used |
 | `elapsed_ms` | both | wall time in milliseconds |
 | `complete` | both | `true` if all factors proven prime |
-| `structure` | classify | compact label — `"semiprime \| lopsided \| mod4_1x3"` |
-| `steps` | factor with `--verbose` | pipeline step trail; empty list otherwise |
+| `structure` | classify | compact label string |
+| `steps` | factor with `--verbose` | pipeline step trail; `[]` otherwise |
 | `coil` | classify with `--coil` | geometric footprint + insight string |
 | `residue` | classify | mod4/mod6/mod30 profile |
 
-The `structure-scan` and `compare-ranges` commands also include:
+**`structure-scan` and `compare-ranges`:**
 
-| Field | Command | Notes |
-|-------|---------|-------|
-| `entropy` | structure-scan | Shannon entropy (bits) of the label distribution. 0 = single label, log₂(k) = uniform over k labels |
-| `a.entropy`, `b.entropy` | compare-ranges | Entropy of each range independently |
-| `entropy_delta` | compare-ranges | `b.entropy − a.entropy`; positive = B more diverse |
+| Field | Notes |
+|-------|-------|
+| `entropy` | Shannon entropy (bits) of label distribution — 0 = single label, log₂(k) = uniform |
+| `a.entropy`, `b.entropy` | per-range entropy in compare-ranges |
+| `entropy_delta` | `b.entropy − a.entropy`; positive = B more structurally diverse |
+| `methods` | factorization method counts (structure-scan with `--profile`) |
 
-Breaking changes to this schema will be documented in release notes and accompanied by a minor version bump.
+Breaking changes will be documented in release notes with a minor version bump.
 
 ---
 
 ## Guarantees and limits
 
-**Deterministic:**
-- Structure labels and residue families are computed from factorization alone — identical input always produces identical output.
-- Primality testing uses Baillie–PSW (Miller-Rabin base-2 + strong Lucas PRP), which is deterministic for all integers up to 2⁶⁴. No known counterexamples exist.
-- `complete: true` means every factor has been proven prime. The factorization is exact.
+**Deterministic:** Structure labels are computed from factorization alone — identical input always produces identical output. Baillie–PSW is deterministic for all integers up to 2⁶⁴.
 
-**May time out:**
-- The factoring pipeline has a configurable budget (`--budget`, default 10 000 ms). For numbers with large prime factors that resist trial division and Pollard Rho, the pipeline may exhaust its budget and return `complete: false` with a partial factorization.
-- For most integers up to ~15 digits, factorization completes in milliseconds. Harder numbers (e.g. RSA-like products of two large primes) may time out.
+**May time out:** The factoring pipeline has a configurable budget (`--budget`, default 10 000 ms). Hard numbers may return `complete: false` with a partial factorization.
 
-**Stable and scriptable:**
-- `classify`, `structure-scan`, `compare-ranges`, `structure-time-series` with `--json` produce stable, machine-readable output safe to pipe, grep, and aggregate.
-- Structure labels are stable strings — they are designed to be safe keys for counting and comparison across runs.
+**Stable and scriptable:** `classify`, `structure-scan`, `compare-ranges`, and `structure-time-series` with `--json` produce output safe to pipe, grep, and aggregate across runs.
 
-**Experimental:**
-- `--coil` and `--helix` output (geometric footprint, ASCII visualization) reflects a model under active development. The coordinate values and balance thresholds may change between minor versions.
-- The insight strings in `coil.insight` are heuristic and human-readable only — do not parse them programmatically.
-
----
-
-## Empirical findings
-
-All measurements below were produced by running primehelix against [1, 1 000 000). The commands are fully reproducible.
-
-### Overall structure distribution
-
-```bash
-primehelix structure-scan --start 1 --stop 1000000 --json
-```
-
-| Classification | Count | Share |
-|----------------|------:|------:|
-| composite | 711,465 | 71.15% |
-| semiprime | 210,035 | 21.00% |
-| prime | 78,498 | 7.85% |
-| invalid (n ≤ 1) | 1 | — |
-
-Primes split almost exactly evenly between the two residue families — 50.09% gaussian (p ≡ 3 mod 4) and 49.91% pythagorean (p ≡ 1 mod 4) — consistent with Dirichlet's theorem on primes in arithmetic progressions.
-
-### Semiprime balance distribution
-
-Among the 210,035 semiprimes in [1, 1M):
-
-| Balance tier | Count | Share |
-|--------------|------:|------:|
-| lopsided (bit_gap > 8 or balance ≥ 10) | 153,718 | **73.2%** |
-| moderate | 54,427 | 25.9% |
-| balanced (bit_gap ≤ 1 and balance < 0.15) | 1,677 | 0.80% |
-
-Lopsided pairs dominate by a wide margin. Balanced semiprimes — the RSA-like products of two primes of nearly equal bit-length — are extremely rare below 1M: under 1 in 125.
-
-### Mod4 pair distribution: all semiprimes vs lopsided-only
-
-| Mod4 pair | All semiprimes | Lopsided only | Shift |
-|-----------|---------------:|-------------:|------:|
-| mod4_1x3 (mixed families) | 40.0% | 36.4% | −3.6 pp |
-| mod4_3x3 (both gaussian) | 23.7% | 22.9% | −0.9 pp |
-| mod4_1x1 (both pythagorean) | 16.4% | 13.7% | −2.7 pp |
-| even-involved (factor of 2) | 19.8% | **27.0%** | **+7.2 pp** |
-
-The lopsided constraint systematically shifts the distribution toward even-involved pairs. The explanation is structural: any semiprime of the form 2×p is always lopsided (p is at least 2 bits larger than 2 for p ≥ 5), so the entire even semiprime population is absorbed into the lopsided bucket. Mixed (1x3) and symmetric (1x1, 3x3) pairs are all proportionally reduced.
-
-### Lopsidedness grows with range
-
-```bash
-primehelix compare-ranges \
-  --a-start 1 --a-stop 500000 \
-  --b-start 500000 --b-stop 1000000 \
-  --only-classification semiprime --top-delta 6 --json
-```
-
-| Structure | delta | ratio |
-|-----------|------:|------:|
-| semiprime \| lopsided \| mod4_1x3 | +2.69% | 1.11× |
-| semiprime \| moderate \| mod4_1x3 | −2.05% | 0.85× |
-| semiprime \| lopsided \| mod4_3x3 | +1.51% | 1.09× |
-| semiprime \| moderate \| mod4_3x3 | −1.39% | 0.81× |
-| semiprime \| lopsided \| mod4_1x1 | +1.29% | 1.14× |
-| semiprime \| moderate \| mod4_1x1 | −0.66% | 0.90× |
-
-As the range shifts from [1, 500k) to [500k, 1M), lopsided semiprimes gain share and moderate ones shrink — uniformly across all three odd mod4 families. The mechanism: small primes (2, 3, 5, 7, …) are repeatedly reused as the smaller factor in semiprimes that reach into higher ranges, producing an ever-wider bit-gap between the two factors.
+**Experimental:** `--coil` and `--helix` geometry output is under active development. Coordinate values and balance thresholds may change between minor versions. Do not parse `coil.insight` strings programmatically.
 
 ---
 
@@ -370,11 +257,6 @@ cd primehelix
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 pytest tests/ -v
-```
-
-**Sync after updates:**
-```bash
-cd ~/primehelix && git pull && source .venv/bin/activate && pytest tests/ -v
 ```
 
 ---
@@ -405,28 +287,13 @@ primehelix/
     └── wheel.py            — Mod-210 wheel scanner, resumable gzip CSV
 ```
 
----
-
-## Origins
-
-primehelix consolidates five research repositories:
-
-| Repo | Contribution |
-|------|-------------|
-| `geom_factor` | Quadratic Sieve, bit-bucket theory, geometric model |
-| `rsacrack` | Factoring pipeline, coil classifier |
-| `ECC-Tools` | ECM reference (C + libecm) |
-| `Cprime` | GMP-backed C CLI (trial + p−1 + Rho) |
-| `onojk123` | Wheel scanner, tangent prime test |
+primehelix consolidates five research repositories: `geom_factor` (Quadratic Sieve, geometric model), `rsacrack` (factoring pipeline, coil classifier), `ECC-Tools` (ECM reference), `Cprime` (GMP-backed CLI), `onojk123` (wheel scanner, tangent prime test).
 
 ---
 
 ## Author
 
-Jonathan Kendall
-https://github.com/onojk
-
----
+Jonathan Kendall — https://github.com/onojk
 
 ## License
 
