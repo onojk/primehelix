@@ -60,37 +60,37 @@ def half_scans():
 
 class TestGoldenCounts:
     def test_total(self, full_scan):
-        assert full_scan["total"] == GOLDEN_TOTAL
+        assert full_scan.total == GOLDEN_TOTAL
 
     def test_exact_label_counts(self, full_scan):
-        assert dict(full_scan["counts"]) == GOLDEN_COUNTS
+        assert dict(full_scan.counts) == GOLDEN_COUNTS
 
     def test_no_extra_labels(self, full_scan):
-        extra = set(full_scan["counts"].keys()) - set(GOLDEN_COUNTS.keys())
+        extra = set(full_scan.counts.keys()) - set(GOLDEN_COUNTS.keys())
         assert not extra, f"unexpected labels appeared: {extra}"
 
     def test_no_missing_labels(self, full_scan):
-        missing = set(GOLDEN_COUNTS.keys()) - set(full_scan["counts"].keys())
+        missing = set(GOLDEN_COUNTS.keys()) - set(full_scan.counts.keys())
         assert not missing, f"expected labels disappeared: {missing}"
 
     def test_entropy(self, full_scan):
-        entropy = label_entropy(full_scan["counts"], full_scan["total"])
+        entropy = label_entropy(full_scan.counts, full_scan.total)
         assert entropy == GOLDEN_ENTROPY
 
     def test_prime_count(self, full_scan):
         # 1229 primes in [1, 10000) — consistent with prime counting function
-        gaussian = full_scan["counts"].get("prime | gaussian", 0)
-        pythagorean = full_scan["counts"].get("prime | pythagorean", 0)
-        prime_2 = full_scan["counts"].get("prime", 0)
+        gaussian = full_scan.counts.get("prime | gaussian", 0)
+        pythagorean = full_scan.counts.get("prime | pythagorean", 0)
+        prime_2 = full_scan.counts.get("prime", 0)
         assert gaussian + pythagorean + prime_2 == 1229
 
     def test_invalid_count(self, full_scan):
         # Only n=1 is invalid in [1, 10000)
-        assert full_scan["counts"].get("invalid", 0) == 1
+        assert full_scan.counts.get("invalid", 0) == 1
 
     def test_prime_residue_symmetry(self, full_scan):
-        gaussian = full_scan["counts"]["prime | gaussian"]
-        pythagorean = full_scan["counts"]["prime | pythagorean"]
+        gaussian = full_scan.counts["prime | gaussian"]
+        pythagorean = full_scan.counts["prime | pythagorean"]
         total_odd = gaussian + pythagorean
         # Neither family dominates by more than 2%
         assert abs(gaussian - pythagorean) / total_odd < 0.02
@@ -100,25 +100,25 @@ class TestGoldenCompare:
     def test_lopsided_gains_in_upper_half(self, half_scans):
         s1, s2 = half_scans
         rows = compare_summaries(s1, s2)
-        by_label = {r["structure"]: r["delta"] for r in rows}
+        by_label = {r.structure: r.delta for r in rows}
         # Lopsided semiprimes gain share as range grows
         assert by_label["semiprime | lopsided | mod4_1x3"] > 0
 
     def test_moderate_shrinks_in_upper_half(self, half_scans):
         s1, s2 = half_scans
         rows = compare_summaries(s1, s2)
-        by_label = {r["structure"]: r["delta"] for r in rows}
+        by_label = {r.structure: r.delta for r in rows}
         # Moderate semiprimes lose share as range grows
         assert by_label["semiprime | moderate | mod4_1x3"] < 0
 
     def test_entropy_decreases_in_upper_half(self, half_scans):
         s1, s2 = half_scans
-        ea = label_entropy(s1["counts"], s1["total"])
-        eb = label_entropy(s2["counts"], s2["total"])
+        ea = label_entropy(s1.counts, s1.total)
+        eb = label_entropy(s2.counts, s2.total)
         # Upper half is less diverse — lopsided dominance concentrates the distribution
         assert eb < ea
 
     def test_entropy_values(self, half_scans):
         s1, s2 = half_scans
-        assert label_entropy(s1["counts"], s1["total"]) == 2.3308
-        assert label_entropy(s2["counts"], s2["total"]) == 2.1401
+        assert label_entropy(s1.counts, s1.total) == 2.3308
+        assert label_entropy(s2.counts, s2.total) == 2.1401

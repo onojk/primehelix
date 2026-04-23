@@ -1,14 +1,16 @@
 """
 Reusable analysis functions — scan, compare, time-series.
 
-These return plain Python dicts/lists and have no CLI dependency,
-so they can be called from notebooks or scripts without any Click involvement.
+These return typed schema objects (ScanResult, list[CompareRow], TimeSeriesResult)
+and have no CLI dependency, so they can be called from notebooks or scripts directly.
 """
 from __future__ import annotations
 
 import sys
 import time
 from collections import Counter
+
+from .schema import CompareRow, ScanResult, TimeSeriesResult, WindowSummary
 
 
 def scan_range(
@@ -18,12 +20,8 @@ def scan_range(
     only_classification: str | None = None,
     only_structure: str | None = None,
     progress: bool = False,
-) -> dict:
-    """Scan [start, stop), assign structure labels, return counts + method totals.
-
-    Returns:
-        {"total": int, "counts": Counter, "methods": Counter}
-    """
+) -> ScanResult:
+    """Scan [start, stop), assign structure labels, return counts + method totals."""
     from .core.factor import classify as do_classify
     from .geometry.residue import residue_profile
     from .display.json_output import structure_summary
@@ -69,23 +67,18 @@ def scan_range(
         sys.stderr.write("\r" + " " * 60 + "\r")
         sys.stderr.flush()
 
-    return {"total": total, "counts": counts, "methods": method_counts}
+    return ScanResult(total=total, counts=counts, methods=method_counts)
 
 
-def compare_summaries(summary_a: dict, summary_b: dict) -> list[dict]:
-    """Build per-label comparison rows from two scan_range results.
-
-    Each row: structure, a_count, a_percent, b_count, b_percent, delta, ratio
-    """
-    counts_a = summary_a["counts"]
-    counts_b = summary_b["counts"]
-    total_a = summary_a["total"]
-    total_b = summary_b["total"]
+def compare_summaries(summary_a: ScanResult, summary_b: ScanResult) -> list[CompareRow]:
+    """Build per-label comparison rows from two scan_range results."""
+    total_a = summary_a.total
+    total_b = summary_b.total
 
     rows = []
-    for s in set(counts_a.keys()) | set(counts_b.keys()):
-        a = counts_a.get(s, 0)
-        b = counts_b.get(s, 0)
+    for s in set(summary_a.counts.keys()) | set(summary_b.counts.keys()):
+        a = summary_a.counts.get(s, 0)
+        b = summary_b.counts.get(s, 0)
         ap = (a / total_a * 100.0) if total_a else 0.0
         bp = (b / total_b * 100.0) if total_b else 0.0
         delta = bp - ap
@@ -97,15 +90,12 @@ def compare_summaries(summary_a: dict, summary_b: dict) -> list[dict]:
         else:
             ratio = f"{(bp / ap):.2f}x"
 
-        rows.append({
-            "structure": s,
-            "a_count": a,
-            "a_percent": ap,
-            "b_count": b,
-            "b_percent": bp,
-            "delta": delta,
-            "ratio": ratio,
-        })
+        rows.append(CompareRow(
+            structure=s,
+            a_count=a, a_percent=ap,
+            b_count=b, b_percent=bp,
+            delta=delta, ratio=ratio,
+        ))
 
     return rows
 
@@ -121,18 +111,9 @@ def build_time_series(
     only_classification: str | None = None,
     only_structure: str | None = None,
     progress: bool = False,
-) -> dict:
-    """Aggregate structure distributions across sliding windows.
-
-    Returns:
-        {
-            "windows": [{"start", "stop", "label", "summary"}, ...],
-            "top_labels": [...],
-            "series_map": {label: [float, ...]},
-            "window_labels": [...],
-        }
-    """
-    windows = []
+) -> TimeSeriesResult:
+    """Aggregate structure distributions across sliding windows."""
+    windows: list[WindowSummary] = []
     cursor = start
     while cursor < stop:
         win_start = cursor
@@ -140,27 +121,25 @@ def build_time_series(
         if win_stop <= win_start:
             break
         win_span = win_stop - win_start
-        summary = scan_range(
+        scan = scan_range(
             win_start, win_stop,
             budget=budget,
             only_classification=only_classification,
             only_structure=only_structure,
             progress=progress and win_span > 10_000,
         )
-        windows.append({
-            "start": win_start,
-            "stop": win_stop,
-            "label": f"[{win_start},{win_stop})",
-            "summary": summary,
-        })
+        windows.append(WindowSummary(
+            start=win_start,
+            stop=win_stop,
+            label=f"[{win_start},{win_stop})",
+            scan=scan,
+        ))
         cursor += step
 
     aggregate_scores: dict[str, float] = {}
     for win in windows:
-        counts = win["summary"]["counts"]
-        total = win["summary"]["total"]
-        for label, count in counts.items():
-            value = (count / total * 100.0) if (metric == "percent" and total) else float(count)
+        for label, count in win.scan.counts.items():
+            value = (count / win.scan.total * 100.0) if (metric == "percent" and win.scan.total) else float(count)
             aggregate_scores[label] = aggregate_scores.get(label, 0.0) + value
 
     top_labels = [
@@ -174,17 +153,15 @@ def build_time_series(
     window_labels: list[str] = []
 
     for win in windows:
-        counts = win["summary"]["counts"]
-        total = win["summary"]["total"]
-        window_labels.append(win["label"])
+        window_labels.append(win.label)
         for label in top_labels:
-            count = counts.get(label, 0)
-            value = (count / total * 100.0) if (metric == "percent" and total) else float(count)
+            count = win.scan.counts.get(label, 0)
+            value = (count / win.scan.total * 100.0) if (metric == "percent" and win.scan.total) else float(count)
             series_map[label].append(value)
 
-    return {
-        "windows": windows,
-        "top_labels": top_labels,
-        "series_map": series_map,
-        "window_labels": window_labels,
-    }
+    return TimeSeriesResult(
+        windows=windows,
+        top_labels=top_labels,
+        series_map=series_map,
+        window_labels=window_labels,
+    )

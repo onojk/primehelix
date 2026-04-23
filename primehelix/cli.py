@@ -54,9 +54,9 @@ def _print_residue_profile(residue: dict):
     console.print(table)
 
 
-def _print_structure_summary(summary: dict, limit: int = 20):
-    counts = summary["counts"]
-    total = summary["total"]
+def _print_structure_summary(summary, limit: int = 20):
+    counts = summary.counts
+    total = summary.total
     table = Table(title="structure summary")
     table.add_column("structure")
     table.add_column("count", justify="right")
@@ -72,8 +72,8 @@ def _print_structure_summary(summary: dict, limit: int = 20):
 
 
 def _print_compare_ranges(
-    summary_a: dict,
-    summary_b: dict,
+    summary_a,
+    summary_b,
     label_a: str,
     label_b: str,
     limit: int = 20,
@@ -81,9 +81,9 @@ def _print_compare_ranges(
 ):
     rows = compare_summaries(summary_a, summary_b)
     if top_delta:
-        rows = sorted(rows, key=lambda r: (-abs(r["delta"]), r["structure"].lower()))[:top_delta]
+        rows = sorted(rows, key=lambda r: (-abs(r.delta), r.structure.lower()))[:top_delta]
     else:
-        rows = sorted(rows, key=lambda r: (-(r["a_count"] + r["b_count"]), r["structure"].lower()))[:limit]
+        rows = sorted(rows, key=lambda r: (-(r.a_count + r.b_count), r.structure.lower()))[:limit]
 
     title = "range comparison" + (f" | top delta {top_delta}" if top_delta else "")
     table = Table(title=title)
@@ -96,17 +96,17 @@ def _print_compare_ranges(
     table.add_column("ratio", justify="right")
     for row in rows:
         table.add_row(
-            row["structure"],
-            str(row["a_count"]),
-            f'{row["a_percent"]:.2f}%',
-            str(row["b_count"]),
-            f'{row["b_percent"]:.2f}%',
-            f'{row["delta"]:+.2f}%',
-            row["ratio"],
+            row.structure,
+            str(row.a_count),
+            f'{row.a_percent:.2f}%',
+            str(row.b_count),
+            f'{row.b_percent:.2f}%',
+            f'{row.delta:+.2f}%',
+            row.ratio,
         )
     console.print(table)
-    console.print(f"[dim]{label_a} total: {summary_a['total']}[/dim]")
-    console.print(f"[dim]{label_b} total: {summary_b['total']}[/dim]")
+    console.print(f"[dim]{label_a} total: {summary_a.total}[/dim]")
+    console.print(f"[dim]{label_b} total: {summary_b.total}[/dim]")
 
 
 def _write_csv(path: str, fieldnames: list[str], rows: list[dict]):
@@ -221,10 +221,9 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
     )
 
     if export_csv:
-        total = summary["total"]
         rows = [
-            {"label": label, "count": count, "percent": f"{count/total*100:.4f}" if total else "0"}
-            for label, count in summary["counts"].most_common()
+            {"label": label, "count": count, "percent": f"{count/summary.total*100:.4f}" if summary.total else "0"}
+            for label, count in summary.counts.most_common()
         ]
         _write_csv(export_csv, ["label", "count", "percent"], rows)
         if not as_json:
@@ -235,12 +234,12 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
             "command": "structure-scan",
             "start": start,
             "stop": stop,
-            "total": summary["total"],
-            "entropy": label_entropy(summary["counts"], summary["total"]),
-            "counts": dict(summary["counts"]),
+            "total": summary.total,
+            "entropy": label_entropy(summary.counts, summary.total),
+            "counts": dict(summary.counts),
         }
         if profile:
-            payload["methods"] = dict(summary["methods"])
+            payload["methods"] = dict(summary.methods)
         if only_classification:
             payload["only_classification"] = only_classification
         if only_structure:
@@ -252,8 +251,8 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
 
     _print_structure_summary(summary)
 
-    if profile and summary["methods"]:
-        methods = summary["methods"]
+    if profile and summary.methods:
+        methods = summary.methods
         mtotal = sum(methods.values())
         table = Table(title="factorization method profile")
         table.add_column("method")
@@ -298,13 +297,13 @@ def compare_ranges(
 
     rows = compare_summaries(summary_a, summary_b)
     if top_delta:
-        rows = sorted(rows, key=lambda r: (-abs(r["delta"]), r["structure"].lower()))[:top_delta]
+        rows = sorted(rows, key=lambda r: (-abs(r.delta), r.structure.lower()))[:top_delta]
 
     if export_csv:
         _write_csv(
             export_csv,
             ["structure", "a_count", "a_percent", "b_count", "b_percent", "delta", "ratio"],
-            rows,
+            [r.to_dict() for r in rows],
         )
         if not as_json:
             console.print(f"[green]CSV written to {export_csv}[/green]")
@@ -314,18 +313,18 @@ def compare_ranges(
             "command": "compare-ranges",
             "a": {
                 "start": a_start, "stop": a_stop,
-                "total": summary_a["total"],
-                "entropy": label_entropy(summary_a["counts"], summary_a["total"]),
-                "counts": dict(summary_a["counts"]),
+                "total": summary_a.total,
+                "entropy": label_entropy(summary_a.counts, summary_a.total),
+                "counts": dict(summary_a.counts),
             },
             "b": {
                 "start": b_start, "stop": b_stop,
-                "total": summary_b["total"],
-                "entropy": label_entropy(summary_b["counts"], summary_b["total"]),
-                "counts": dict(summary_b["counts"]),
+                "total": summary_b.total,
+                "entropy": label_entropy(summary_b.counts, summary_b.total),
+                "counts": dict(summary_b.counts),
             },
             "entropy_delta": None,
-            "rows": rows,
+            "rows": [r.to_dict() for r in rows],
         }
         ea = payload["a"]["entropy"]
         eb = payload["b"]["entropy"]
@@ -387,13 +386,13 @@ def structure_time_series(
         progress=not as_json,
     )
 
-    if not ts["windows"]:
+    if not ts.windows:
         raise click.UsageError("no windows generated")
 
-    top_labels = ts["top_labels"]
-    series_map = ts["series_map"]
-    window_labels = ts["window_labels"]
-    windows = ts["windows"]
+    top_labels = ts.top_labels
+    series_map = ts.series_map
+    window_labels = ts.window_labels
+    windows = ts.windows
 
     title = f"Structure Time Series [{start}, {stop})"
     ylabel = "Percent" if metric == "percent" else "Count"
@@ -405,7 +404,7 @@ def structure_time_series(
     if export_csv:
         csv_rows = []
         for i, win in enumerate(windows):
-            row = {"window": window_labels[i], "start": win["start"], "stop": win["stop"]}
+            row = {"window": window_labels[i], "start": win.start, "stop": win.stop}
             for label in top_labels:
                 row[label] = f"{series_map[label][i]:.4f}"
             csv_rows.append(row)
@@ -444,7 +443,7 @@ def structure_time_series(
             "plot": plot_path,
             "labels": top_labels,
             "windows": [
-                {"start": w["start"], "stop": w["stop"], "label": w["label"], "total": w["summary"]["total"]}
+                {"start": w.start, "stop": w.stop, "label": w.label, "total": w.scan.total}
                 for w in windows
             ],
             "series": series_map,
