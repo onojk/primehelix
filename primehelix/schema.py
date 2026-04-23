@@ -3,11 +3,13 @@ Public data schema for primehelix analysis results.
 
 These dataclasses are the stable return types of analysis.scan_range,
 analysis.compare_summaries, and analysis.build_time_series.
+Each class carries a to_json_dict() / to_dict() method so cli.py only
+needs to add command-level envelope fields (command, start, stop, …).
 """
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -16,6 +18,12 @@ class ScanResult:
     total: int
     counts: Counter
     methods: Counter
+
+    def to_json_dict(self, *, include_methods: bool = False) -> dict:
+        d: dict = {"total": self.total, "counts": dict(self.counts)}
+        if include_methods:
+            d["methods"] = dict(self.methods)
+        return d
 
 
 @dataclass
@@ -49,6 +57,9 @@ class WindowSummary:
     label: str
     scan: ScanResult
 
+    def to_dict(self) -> dict:
+        return {"start": self.start, "stop": self.stop, "label": self.label, "total": self.scan.total}
+
 
 @dataclass
 class TimeSeriesResult:
@@ -57,3 +68,10 @@ class TimeSeriesResult:
     top_labels: list[str]
     series_map: dict[str, list[float]]
     window_labels: list[str]
+
+    def to_json_dict(self) -> dict:
+        return {
+            "labels": self.top_labels,
+            "windows": [w.to_dict() for w in self.windows],
+            "series": self.series_map,
+        }

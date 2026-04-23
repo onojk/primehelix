@@ -1,5 +1,6 @@
 from __future__ import annotations
 import csv
+import json as _json
 import sys
 
 import click
@@ -116,6 +117,11 @@ def _write_csv(path: str, fieldnames: list[str], rows: list[dict]):
         writer.writerows(rows)
 
 
+def _write_json(path: str, payload: dict):
+    with open(path, "w") as f:
+        _json.dump(payload, f, indent=2)
+
+
 # -----------------------------
 # classify
 # -----------------------------
@@ -210,9 +216,12 @@ def factor(n, verbose, budget, as_json):
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write label counts to CSV at this path")
+@click.option("--export-json", "export_json_path", default=None, type=str,
+              help="Write full JSON result to this file")
 @click.option("--fast", "fast_mode", is_flag=True,
               help="Skip geometry — return classification-only labels (faster for large ranges)")
-def structure_scan(start, stop, as_json, profile, only_classification, only_structure, export_csv, fast_mode):
+def structure_scan(start, stop, as_json, profile, only_classification, only_structure,
+                   export_csv, export_json_path, fast_mode):
     span = stop - start
     summary = scan_range(
         start, stop,
@@ -220,35 +229,37 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
         only_classification=only_classification,
         only_structure=only_structure,
         progress=span > 10_000 and not as_json,
-        detail="fast" if fast_mode else "full",
+        detail="classification" if fast_mode else "full",
     )
+
+    payload = {
+        "command": "structure-scan",
+        "start": start,
+        "stop": stop,
+        "entropy": label_entropy(summary.counts, summary.total),
+        **summary.to_json_dict(include_methods=profile),
+    }
+    if only_classification:
+        payload["only_classification"] = only_classification
+    if only_structure:
+        payload["only_structure"] = only_structure
 
     if export_csv:
         rows = [
-            {"label": label, "count": count, "percent": f"{count/summary.total*100:.4f}" if summary.total else "0"}
+            {"label": label, "count": count,
+             "percent": f"{count/summary.total*100:.4f}" if summary.total else "0"}
             for label, count in summary.counts.most_common()
         ]
         _write_csv(export_csv, ["label", "count", "percent"], rows)
         if not as_json:
             console.print(f"[green]CSV written to {export_csv}[/green]")
 
+    if export_json_path:
+        _write_json(export_json_path, payload)
+        if not as_json:
+            console.print(f"[green]JSON written to {export_json_path}[/green]")
+
     if as_json:
-        payload = {
-            "command": "structure-scan",
-            "start": start,
-            "stop": stop,
-            "total": summary.total,
-            "entropy": label_entropy(summary.counts, summary.total),
-            "counts": dict(summary.counts),
-        }
-        if profile:
-            payload["methods"] = dict(summary.methods)
-        if only_classification:
-            payload["only_classification"] = only_classification
-        if only_structure:
-            payload["only_structure"] = only_structure
-        if export_csv:
-            payload["export_csv"] = export_csv
         print_json(payload)
         return
 
@@ -281,15 +292,18 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write comparison rows to CSV at this path")
+@click.option("--export-json", "export_json_path", default=None, type=str,
+              help="Write full JSON result to this file")
 @click.option("--fast", "fast_mode", is_flag=True,
               help="Skip geometry — return classification-only labels (faster for large ranges)")
 def compare_ranges(
     a_start, a_stop, b_start, b_stop,
-    top_delta, as_json, only_classification, only_structure, export_csv, fast_mode,
+    top_delta, as_json, only_classification, only_structure,
+    export_csv, export_json_path, fast_mode,
 ):
     span_a = a_stop - a_start
     span_b = b_stop - b_start
-    detail = "fast" if fast_mode else "full"
+    detail = "classification" if fast_mode else "full"
     summary_a = scan_range(
         a_start, a_stop, budget=2000,
         only_classification=only_classification, only_structure=only_structure,
@@ -307,6 +321,22 @@ def compare_ranges(
     if top_delta:
         rows = sorted(rows, key=lambda r: (-abs(r.delta), r.structure.lower()))[:top_delta]
 
+    ea = label_entropy(summary_a.counts, summary_a.total)
+    eb = label_entropy(summary_b.counts, summary_b.total)
+    payload = {
+        "command": "compare-ranges",
+        "a": {"start": a_start, "stop": a_stop, "entropy": ea, **summary_a.to_json_dict()},
+        "b": {"start": b_start, "stop": b_stop, "entropy": eb, **summary_b.to_json_dict()},
+        "entropy_delta": round(eb - ea, 4) if ea is not None and eb is not None else None,
+        "rows": [r.to_dict() for r in rows],
+    }
+    if top_delta:
+        payload["top_delta"] = top_delta
+    if only_classification:
+        payload["only_classification"] = only_classification
+    if only_structure:
+        payload["only_structure"] = only_structure
+
     if export_csv:
         _write_csv(
             export_csv,
@@ -316,36 +346,12 @@ def compare_ranges(
         if not as_json:
             console.print(f"[green]CSV written to {export_csv}[/green]")
 
+    if export_json_path:
+        _write_json(export_json_path, payload)
+        if not as_json:
+            console.print(f"[green]JSON written to {export_json_path}[/green]")
+
     if as_json:
-        payload = {
-            "command": "compare-ranges",
-            "a": {
-                "start": a_start, "stop": a_stop,
-                "total": summary_a.total,
-                "entropy": label_entropy(summary_a.counts, summary_a.total),
-                "counts": dict(summary_a.counts),
-            },
-            "b": {
-                "start": b_start, "stop": b_stop,
-                "total": summary_b.total,
-                "entropy": label_entropy(summary_b.counts, summary_b.total),
-                "counts": dict(summary_b.counts),
-            },
-            "entropy_delta": None,
-            "rows": [r.to_dict() for r in rows],
-        }
-        ea = payload["a"]["entropy"]
-        eb = payload["b"]["entropy"]
-        if ea is not None and eb is not None:
-            payload["entropy_delta"] = round(eb - ea, 4)
-        if top_delta:
-            payload["top_delta"] = top_delta
-        if only_classification:
-            payload["only_classification"] = only_classification
-        if only_structure:
-            payload["only_structure"] = only_structure
-        if export_csv:
-            payload["export_csv"] = export_csv
         print_json(payload)
         return
 
@@ -374,11 +380,14 @@ def compare_ranges(
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write per-window series data to CSV at this path")
+@click.option("--export-json", "export_json_path", default=None, type=str,
+              help="Write full JSON result to this file")
 @click.option("--fast", "fast_mode", is_flag=True,
               help="Skip geometry — return classification-only labels (faster for large ranges)")
 def structure_time_series(
     start, stop, window, step, metric, top,
-    plot_path, as_json, only_classification, only_structure, export_csv, fast_mode,
+    plot_path, as_json, only_classification, only_structure,
+    export_csv, export_json_path, fast_mode,
 ):
     if stop <= start:
         raise click.UsageError("stop must be greater than start")
@@ -394,16 +403,11 @@ def structure_time_series(
         only_classification=only_classification,
         only_structure=only_structure,
         progress=not as_json,
-        detail="fast" if fast_mode else "full",
+        detail="classification" if fast_mode else "full",
     )
 
     if not ts.windows:
         raise click.UsageError("no windows generated")
-
-    top_labels = ts.top_labels
-    series_map = ts.series_map
-    window_labels = ts.window_labels
-    windows = ts.windows
 
     title = f"Structure Time Series [{start}, {stop})"
     ylabel = "Percent" if metric == "percent" else "Count"
@@ -412,16 +416,37 @@ def structure_time_series(
     if only_structure:
         title += f" | structure~{only_structure}"
 
+    payload = {
+        "command": "structure-time-series",
+        "start": start,
+        "stop": stop,
+        "window": window,
+        "step": step,
+        "metric": metric,
+        "top": top,
+        "plot": plot_path,
+        **ts.to_json_dict(),
+    }
+    if only_classification:
+        payload["only_classification"] = only_classification
+    if only_structure:
+        payload["only_structure"] = only_structure
+
     if export_csv:
         csv_rows = []
-        for i, win in enumerate(windows):
-            row = {"window": window_labels[i], "start": win.start, "stop": win.stop}
-            for label in top_labels:
-                row[label] = f"{series_map[label][i]:.4f}"
+        for i, win in enumerate(ts.windows):
+            row = {"window": ts.window_labels[i], "start": win.start, "stop": win.stop}
+            for label in ts.top_labels:
+                row[label] = f"{ts.series_map[label][i]:.4f}"
             csv_rows.append(row)
-        _write_csv(export_csv, ["window", "start", "stop"] + top_labels, csv_rows)
+        _write_csv(export_csv, ["window", "start", "stop"] + ts.top_labels, csv_rows)
         if not as_json:
             console.print(f"[green]CSV written to {export_csv}[/green]")
+
+    if export_json_path:
+        _write_json(export_json_path, payload)
+        if not as_json:
+            console.print(f"[green]JSON written to {export_json_path}[/green]")
 
     if plot_path:
         try:
@@ -429,8 +454,8 @@ def structure_time_series(
         except ImportError as e:
             raise click.UsageError(str(e))
         save_structure_time_series_plot(
-            series_map=series_map,
-            window_labels=window_labels,
+            series_map=ts.series_map,
+            window_labels=ts.window_labels,
             output_path=plot_path,
             title=title,
             ylabel=ylabel,
@@ -438,33 +463,11 @@ def structure_time_series(
         if not as_json:
             console.print(f"[green]Plot written to {plot_path}[/green]")
     elif not as_json:
-        for label in top_labels:
-            vals = series_map[label]
+        for label in ts.top_labels:
+            vals = ts.series_map[label]
             console.print(f"  [cyan]{label}[/cyan]: {[f'{v:.1f}' for v in vals]}")
 
     if as_json:
-        payload = {
-            "command": "structure-time-series",
-            "start": start,
-            "stop": stop,
-            "window": window,
-            "step": step,
-            "metric": metric,
-            "top": top,
-            "plot": plot_path,
-            "labels": top_labels,
-            "windows": [
-                {"start": w.start, "stop": w.stop, "label": w.label, "total": w.scan.total}
-                for w in windows
-            ],
-            "series": series_map,
-        }
-        if only_classification:
-            payload["only_classification"] = only_classification
-        if only_structure:
-            payload["only_structure"] = only_structure
-        if export_csv:
-            payload["export_csv"] = export_csv
         print_json(payload)
 
 

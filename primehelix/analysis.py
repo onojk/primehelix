@@ -33,14 +33,14 @@ def scan_range(
 ) -> ScanResult:
     """Scan [start, stop), assign structure labels, return counts + method totals.
 
-    detail="full"  — complete labels including balance tier and residue family (default)
-    detail="fast"  — classification-only labels (prime/semiprime/composite/invalid);
-                     skips all geometry, ~9% faster on unfiltered scans, much faster
-                     when combined with only_classification filtering
+    detail="full"           — complete labels including balance tier and residue family (default)
+    detail="classification" — classification-only labels (prime/semiprime/composite/invalid);
+                              skips all geometry, ~9% faster on unfiltered scans, much faster
+                              when combined with only_classification filtering
     """
     from .core.factor import classify as do_classify
 
-    _fast = detail == "fast"
+    _fast = detail == "classification"
     if not _fast:
         from .geometry.residue import residue_profile
         from .geometry.coil import CoilBalance
