@@ -106,11 +106,17 @@ def factor(n: int, budget_ms: int = 10_000) -> FactorResult:
         elapsed = int((time.monotonic() - start) * 1000)
         remaining = budget_ms - elapsed
         if remaining < 50:
+            if is_prime(n):
+                _record(n)
+                return True
             _record(n)
             return False
 
         f = _factor_one(n, remaining, steps)
         if f is None:
+            if is_prime(n):
+                _record(n)
+                return True
             steps.append(f"gave up on {n} ({len(str(n))} digits)")
             _record(n)
             return False
@@ -123,12 +129,14 @@ def factor(n: int, budget_ms: int = 10_000) -> FactorResult:
     elapsed_ms = (time.monotonic() - start) * 1000
 
     method = "trial"
-    if steps:
-        last = steps[-1]
+    for step in reversed(steps):
         for m in ("qs", "ecm", "rho", "p+1", "p-1", "trial"):
-            if m in last:
+            if m in step:
                 method = m
                 break
+        else:
+            continue
+        break
 
     return FactorResult(
         n=n,
