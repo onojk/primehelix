@@ -79,19 +79,28 @@ def _strong_lucas_prp(n: int) -> bool:
     s = (d & -d).bit_length() - 1
     d >>= s
 
-    U, V, Qk = 0, 2 % n, 1
-    for bit in bin(d)[2:]:
-        U2 = (U * V) % n
-        V2 = (V * V - 2 * Qk) % n
-        U, V, Qk = U2, V2, (Qk * Qk) % n
-        if bit == '1':
-            U, V = (U + V) % n, (V + U * P) % n
-            Qk = (Qk * Q) % n
+    # inv(2) mod n — always exists since n is odd
+    inv2 = (n + 1) >> 1
 
+    # Start at (U_1, V_1, Q^1), then process remaining bits of d
+    U, V, Qk = 1, P % n, Q % n
+    for bit in bin(d)[3:]:   # skip leading '1b1'
+        # Double: (U_{2k}, V_{2k}, Q^{2k})
+        U, V, Qk = (U * V) % n, (V * V - 2 * Qk) % n, (Qk * Qk) % n
+        # Add 1 if this bit is set: use correct step-add formulas with inv(2)
+        if bit == '1':
+            new_U = (P * U + V) * inv2 % n
+            new_V = (D * U + P * V) * inv2 % n
+            U, V = new_U, new_V
+            Qk = Qk * Q % n
+
+    # U == U_d, V == V_d
     if U == 0 or V == 0:
         return True
+    # Check V_{d * 2^r} for r = 1 .. s-1
     for _ in range(s - 1):
-        V = (V * V - 2) % n
+        V = (V * V - 2 * Qk) % n
+        Qk = (Qk * Qk) % n
         if V == 0:
             return True
     return False
