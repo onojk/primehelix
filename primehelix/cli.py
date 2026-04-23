@@ -289,18 +289,24 @@ def classify(n, coil, helix, residue, as_json):
 
 @main.command()
 @click.argument("n", type=str)
-@click.option("--json", "as_json", is_flag=True)
-def factor(n, as_json):
+@click.option("--verbose", is_flag=True, help="Show pipeline steps")
+@click.option("--budget", default=10000, show_default=True, type=int, help="Time budget in ms")
+@click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
+def factor(n, verbose, budget, as_json):
     from .core.factor import factor as do_factor
 
     N = int(n)
-    result = do_factor(N)
+    result = do_factor(N, budget_ms=budget)
 
     if as_json:
-        print_json(build_json_result(result, command="factor"))
+        payload = build_json_result(result, command="factor")
+        if verbose:
+            payload["steps"] = list(result.steps or [])
+        print_json(payload)
         return
 
-    console.print(result)
+    from .display.output import print_factor
+    print_factor(result, verbose=verbose)
 
 
 # -----------------------------
@@ -538,8 +544,9 @@ def structure_time_series(
             title=title,
             ylabel=ylabel,
         )
-        console.print(f"[green]Plot written to {plot_path}[/green]")
-    else:
+        if not as_json:
+            console.print(f"[green]Plot written to {plot_path}[/green]")
+    elif not as_json:
         for label in top_labels:
             vals = series_map[label]
             console.print(f"  [cyan]{label}[/cyan]: {[f'{v:.1f}' for v in vals]}")
