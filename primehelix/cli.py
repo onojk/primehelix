@@ -86,15 +86,21 @@ def _summarize_filtered_range(
     budget: int,
     only_classification: str | None = None,
     only_structure: str | None = None,
+    progress: bool = False,
 ):
+    import sys
+    import time
     from collections import Counter
     from .core.factor import classify as do_classify
     from .geometry.residue import residue_profile
 
     counts = Counter()
     total = 0
+    span = stop - start
+    t0 = time.monotonic()
+    _REPORT_EVERY = max(1, span // 100)  # ~1% increments
 
-    for n in range(start, stop):
+    for i, n in enumerate(range(start, stop)):
         classification, result = do_classify(n, budget_ms=budget)
         residue = residue_profile(n, result.factors, classification=classification)
 
@@ -108,10 +114,24 @@ def _summarize_filtered_range(
         label = structure_summary(classification, coil=coil, residue=residue)
 
         if not _matches_filters(classification, label, only_classification, only_structure):
-            continue
+            pass
+        else:
+            counts[label] += 1
+            total += 1
 
-        counts[label] += 1
-        total += 1
+        if progress and span > 0 and (i + 1) % _REPORT_EVERY == 0:
+            pct = (i + 1) / span * 100
+            elapsed = time.monotonic() - t0
+            rate = (i + 1) / elapsed if elapsed > 0 else 0
+            eta = (span - i - 1) / rate if rate > 0 else 0
+            sys.stderr.write(
+                f"\r  {pct:5.1f}%  n={n:,}  {rate:,.0f}/s  eta {eta:.0f}s    "
+            )
+            sys.stderr.flush()
+
+    if progress and span > 0:
+        sys.stderr.write("\r" + " " * 60 + "\r")
+        sys.stderr.flush()
 
     return {
         "total": total,
@@ -294,12 +314,14 @@ def factor(n, as_json):
 @click.option("--only-classification", type=str)
 @click.option("--only-structure", type=str)
 def structure_scan(start, stop, as_json, only_classification, only_structure):
+    span = stop - start
     summary = _summarize_filtered_range(
         start,
         stop,
         budget=2000,
         only_classification=only_classification,
         only_structure=only_structure,
+        progress=span > 10_000 and not as_json,
     )
 
     if as_json:
@@ -343,12 +365,15 @@ def compare_ranges(
     only_classification,
     only_structure,
 ):
+    span_a = a_stop - a_start
+    span_b = b_stop - b_start
     summary_a = _summarize_filtered_range(
         a_start,
         a_stop,
         budget=2000,
         only_classification=only_classification,
         only_structure=only_structure,
+        progress=span_a > 10_000 and not as_json,
     )
     summary_b = _summarize_filtered_range(
         b_start,
@@ -356,6 +381,7 @@ def compare_ranges(
         budget=2000,
         only_classification=only_classification,
         only_structure=only_structure,
+        progress=span_b > 10_000 and not as_json,
     )
 
     rows = _compare_rows(summary_a, summary_b)
@@ -446,12 +472,14 @@ def structure_time_series(
         if win_stop <= win_start:
             break
 
+        win_span = win_stop - win_start
         summary = _summarize_filtered_range(
             win_start,
             win_stop,
             budget=2000,
             only_classification=only_classification,
             only_structure=only_structure,
+            progress=win_span > 10_000 and not as_json,
         )
         windows.append(
             {
