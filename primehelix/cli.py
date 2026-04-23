@@ -100,10 +100,10 @@ def _summarize_filtered_range(
 
         coil = None
         if classification.lower() == "semiprime":
-            from .geometry.coil import coil_footprint
+            from .geometry.coil import CoilBalance
             primes = sorted(result.factors.keys())
             if len(primes) == 2:
-                coil = coil_footprint(n, primes[0], primes[1])
+                coil = CoilBalance(primes[0], primes[1], n)
 
         label = structure_summary(classification, coil=coil, residue=residue)
 
@@ -219,10 +219,11 @@ def _print_compare_ranges(
 
 @main.command()
 @click.argument("n", type=str)
-@click.option("--coil", is_flag=True)
-@click.option("--residue", is_flag=True)
-@click.option("--json", "as_json", is_flag=True)
-def classify(n, coil, residue, as_json):
+@click.option("--coil", is_flag=True, help="Show conical helix footprint")
+@click.option("--helix", is_flag=True, help="Render ASCII double-helix visualization")
+@click.option("--residue", is_flag=True, help="Show residue/arithmetic-family profile")
+@click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
+def classify(n, coil, helix, residue, as_json):
     from .core.factor import classify as do_classify
     from .geometry.residue import residue_profile
     from .geometry.coil import coil_footprint
@@ -232,7 +233,7 @@ def classify(n, coil, residue, as_json):
     res = residue_profile(N, result.factors, classification=classification)
 
     coil_data = None
-    if coil and classification == "semiprime":
+    if (coil or helix) and classification == "semiprime":
         primes = sorted(result.factors.keys())
         if len(primes) == 2:
             coil_data = coil_footprint(N, primes[0], primes[1])
@@ -251,6 +252,15 @@ def classify(n, coil, residue, as_json):
     console.print(f"{N} → {classification}")
     if residue:
         _print_residue_profile(res)
+    if coil and coil_data:
+        from .display.output import print_coil
+        print_coil(coil_data)
+    if helix:
+        from .display.ascii_helix import print_ascii_helix
+        if coil_data:
+            print_ascii_helix(coil_data)
+        else:
+            console.print("[yellow]Helix requires a semiprime.[/yellow]")
 
 
 # -----------------------------
@@ -403,7 +413,7 @@ def compare_ranges(
 @click.option("--step", default=10000, show_default=True, type=int)
 @click.option("--metric", type=click.Choice(["percent", "count"]), default="percent", show_default=True)
 @click.option("--top", default=5, show_default=True, type=int, help="Number of structure series to plot")
-@click.option("--plot", "plot_path", required=True, type=str)
+@click.option("--plot", "plot_path", default=None, type=str, help="Save plot to this path (PNG)")
 @click.option("--json", "as_json", is_flag=True)
 @click.option("--only-classification", type=str)
 @click.option("--only-structure", type=str)
@@ -492,14 +502,19 @@ def structure_time_series(
     if only_structure:
         title += f" | structure~{only_structure}"
 
-    save_structure_time_series_plot(
-        series_map=series_map,
-        window_labels=window_labels,
-        output_path=plot_path,
-        title=title,
-        ylabel=ylabel,
-    )
-    console.print(f"[green]Plot written to {plot_path}[/green]")
+    if plot_path:
+        save_structure_time_series_plot(
+            series_map=series_map,
+            window_labels=window_labels,
+            output_path=plot_path,
+            title=title,
+            ylabel=ylabel,
+        )
+        console.print(f"[green]Plot written to {plot_path}[/green]")
+    else:
+        for label in top_labels:
+            vals = series_map[label]
+            console.print(f"  [cyan]{label}[/cyan]: {[f'{v:.1f}' for v in vals]}")
 
     if as_json:
         payload = {

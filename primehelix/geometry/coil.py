@@ -58,6 +58,16 @@ def coil_point(n: int, r0: float = 1.0, alpha: float = 0.0125,
     )
 
 
+class CoilBalance:
+    """Lightweight stand-in for CoilFootprint when only bit_gap/balance are needed."""
+    __slots__ = ("bit_gap", "balance")
+    def __init__(self, p: int, q: int, n: int):
+        if p > q:
+            p, q = q, p
+        self.bit_gap = abs(p.bit_length() - q.bit_length())
+        self.balance = abs(q - p) / math.sqrt(n)
+
+
 def coil_footprint(n: int, p: int, q: int,
                    r0: float = 1.0, alpha: float = 0.0125,
                    beta: float = 0.005, L: float = 360.0) -> CoilFootprint:
