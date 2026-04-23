@@ -31,14 +31,22 @@ def test_factor_json_schema():
 
     assert data["command"] == "factor"
     assert data["n"] == 2147483646
-    assert data["classification"] is None
+    assert "classification" not in data
     assert data["method"] == "rho"
     assert data["complete"] is True
     assert data["factors"]["151"] == 1
     assert data["factors"]["331"] == 1
     assert data["factorization"] == "2 * 3^2 * 7 * 11 * 31 * 151 * 331"
+    assert data["steps"] == []
+    assert "structure" not in data
+
+
+def test_factor_verbose_json_schema():
+    out = run_cli("factor", "2147483646", "--json", "--verbose")
+    data = json.loads(out)
+
+    assert data["steps"] == data["steps"]  # is a list
     assert "trial: 31" in data["steps"]
-    assert "structure" not in data or data["structure"] is None
 
 
 def test_classify_coil_json_contains_insight():

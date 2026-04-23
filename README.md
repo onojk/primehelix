@@ -123,7 +123,7 @@ The spread and compression of the helix reflect the actual factor structure — 
   "factorization": "13 * 100003",
   "method": "trial",
   "complete": true,
-  "structure": "semiprime | mod4_1x3",
+  "structure": "semiprime | lopsided | mod4_1x3",
   "residue": {
     "semiprime_mod4_pair": "1x3",
     "semiprime_mod4_note": "mixed 1 mod 4 and 3 mod 4 factor families",
@@ -237,21 +237,44 @@ Divides `[start, stop)` into overlapping or non-overlapping windows, computes st
 
 `classify` and `factor` both support `--json`. The schema is stable across patch versions:
 
-| Field | Always present | Notes |
-|-------|---------------|-------|
-| `command` | yes | `"classify"` or `"factor"` |
-| `n` | yes | integer |
-| `classification` | classify only | `"prime"`, `"semiprime"`, `"composite"`, `"invalid"` |
-| `factors` | yes | `{"p": exponent, ...}` |
-| `factorization` | yes | `"2 * 3^2 * 7"` (ASCII) |
-| `method` | yes | last algorithm used |
-| `complete` | yes | `true` if all factors proven prime |
-| `structure` | classify only | compact label string |
-| `steps` | with `--verbose` | pipeline step trail |
-| `coil` | with `--coil` | geometric footprint + insight |
-| `residue` | classify only | mod4/mod6/mod30 profile |
+| Field | Present in | Notes |
+|-------|-----------|-------|
+| `command` | both | `"classify"` or `"factor"` |
+| `n` | both | integer |
+| `classification` | classify | `"prime"`, `"semiprime"`, `"composite"`, `"invalid"` |
+| `factors` | both | `{"p": exponent, ...}` |
+| `prime_factors` | both | flat list, e.g. `[3, 3, 7]` for 3²×7 |
+| `factorization` | both | `"2 * 3^2 * 7"` (ASCII) |
+| `method` | both | last algorithm used |
+| `elapsed_ms` | both | wall time in milliseconds |
+| `complete` | both | `true` if all factors proven prime |
+| `structure` | classify | compact label — `"semiprime \| lopsided \| mod4_1x3"` |
+| `steps` | factor with `--verbose` | pipeline step trail; empty list otherwise |
+| `coil` | classify with `--coil` | geometric footprint + insight string |
+| `residue` | classify | mod4/mod6/mod30 profile |
 
 Breaking changes to this schema will be documented in release notes and accompanied by a minor version bump.
+
+---
+
+## Guarantees and limits
+
+**Deterministic:**
+- Structure labels and residue families are computed from factorization alone — identical input always produces identical output.
+- Primality testing uses Baillie–PSW (Miller-Rabin base-2 + strong Lucas PRP), which is deterministic for all integers up to 2⁶⁴. No known counterexamples exist.
+- `complete: true` means every factor has been proven prime. The factorization is exact.
+
+**May time out:**
+- The factoring pipeline has a configurable budget (`--budget`, default 10 000 ms). For numbers with large prime factors that resist trial division and Pollard Rho, the pipeline may exhaust its budget and return `complete: false` with a partial factorization.
+- For most integers up to ~15 digits, factorization completes in milliseconds. Harder numbers (e.g. RSA-like products of two large primes) may time out.
+
+**Stable and scriptable:**
+- `classify`, `structure-scan`, `compare-ranges`, `structure-time-series` with `--json` produce stable, machine-readable output safe to pipe, grep, and aggregate.
+- Structure labels are stable strings — they are designed to be safe keys for counting and comparison across runs.
+
+**Experimental:**
+- `--coil` and `--helix` output (geometric footprint, ASCII visualization) reflects a model under active development. The coordinate values and balance thresholds may change between minor versions.
+- The insight strings in `coil.insight` are heuristic and human-readable only — do not parse them programmatically.
 
 ---
 

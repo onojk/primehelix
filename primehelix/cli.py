@@ -246,17 +246,20 @@ def _print_compare_ranges(
 def classify(n, coil, helix, residue, as_json):
     from .core.factor import classify as do_classify
     from .geometry.residue import residue_profile
-    from .geometry.coil import coil_footprint
+    from .geometry.coil import CoilBalance, coil_footprint
 
     N = int(n)
     classification, result = do_classify(N)
     res = residue_profile(N, result.factors, classification=classification)
 
+    coil_balance = None
     coil_data = None
-    if (coil or helix) and classification == "semiprime":
+    if classification == "semiprime":
         primes = sorted(result.factors.keys())
         if len(primes) == 2:
-            coil_data = coil_footprint(N, primes[0], primes[1])
+            coil_balance = CoilBalance(primes[0], primes[1], N)
+            if coil or helix:
+                coil_data = coil_footprint(N, primes[0], primes[1])
 
     if as_json:
         payload = build_json_result(
@@ -266,6 +269,10 @@ def classify(n, coil, helix, residue, as_json):
             coil=coil_data,
             residue=res,
         )
+        # Always include balance in structure label for semiprimes
+        if coil_balance and not coil_data:
+            from .display.json_output import structure_summary
+            payload["structure"] = structure_summary(classification, coil=coil_balance, residue=res)
         print_json(payload)
         return
 
@@ -300,8 +307,8 @@ def factor(n, verbose, budget, as_json):
 
     if as_json:
         payload = build_json_result(result, command="factor")
-        if verbose:
-            payload["steps"] = list(result.steps or [])
+        payload.pop("classification", None)
+        payload["steps"] = list(result.steps or []) if verbose else []
         print_json(payload)
         return
 
