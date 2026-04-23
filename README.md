@@ -187,6 +187,46 @@ Divides `[start, stop)` into windows, computes structure distributions in each, 
 
 ---
 
+## Python API
+
+All analysis functions work as a library — no CLI required. Results are typed dataclasses.
+
+```python
+from primehelix.analysis import scan_range, compare_summaries, build_time_series
+
+# Scan a range and inspect label counts
+scan = scan_range(1, 100_000)
+print(scan.total)                        # total integers counted
+print(scan.counts.most_common(5))        # top 5 structure labels
+
+# Compare two ranges — see which labels gained or lost share
+s1 = scan_range(1, 500_000, only_classification="semiprime")
+s2 = scan_range(500_000, 1_000_000, only_classification="semiprime")
+rows = compare_summaries(s1, s2)
+for row in sorted(rows, key=lambda r: -abs(r.delta))[:5]:
+    print(f"{row.delta:+.2f}pp  {row.structure}")
+
+# Track structure trends across windows
+ts = build_time_series(1, 1_000_000, window=100_000, step=100_000,
+                       only_classification="semiprime")
+for label in ts.top_labels:
+    print(label, ts.series_map[label])
+
+# Export results directly from the API
+import json
+with open("scan.json", "w") as f:
+    json.dump({"start": 1, "stop": 100_000, **scan.to_json_dict()}, f, indent=2)
+```
+
+Use `detail="classification"` for fast classification-only counts (no geometry, ~10% faster):
+
+```python
+scan = scan_range(1, 10_000_000, only_classification="prime", detail="classification")
+print(scan.total)   # prime count in [1, 10M) — no residue family breakdown
+```
+
+---
+
 ## Structure labels
 
 Every integer gets a label of up to three parts joined by ` | `:
