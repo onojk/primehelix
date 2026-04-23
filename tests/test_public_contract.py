@@ -32,7 +32,7 @@ def cli_json(*args):
 class TestClassifyContract:
     def test_flags_exist(self):
         r = cli("classify", "--help")
-        for flag in ("--coil", "--helix", "--residue", "--json"):
+        for flag in ("--coil", "--helix", "--residue", "--json", "--export-json"):
             assert flag in r.stdout, f"missing flag {flag}"
 
     def test_json_required_keys(self):
@@ -95,6 +95,22 @@ class TestClassifyContract:
         r = cli("classify", "abc", "--json")
         assert r.returncode != 0
 
+    def test_export_json_writes_file(self, tmp_path):
+        out = tmp_path / "classify.json"
+        r = cli("classify", "91", "--export-json", str(out))
+        assert r.returncode == 0
+        assert out.exists()
+        import json
+        d = json.loads(out.read_text())
+        assert d["command"] == "classify"
+        assert d["n"] == 91
+
+    def test_export_json_combined_with_json_flag(self, tmp_path):
+        out = tmp_path / "classify.json"
+        d = cli_json("classify", "91", "--json", "--export-json", str(out))
+        assert d["command"] == "classify"
+        assert out.exists()
+
 
 # ---------------------------------------------------------------------------
 # factor
@@ -103,7 +119,7 @@ class TestClassifyContract:
 class TestFactorContract:
     def test_flags_exist(self):
         r = cli("factor", "--help")
-        for flag in ("--verbose", "--budget", "--json"):
+        for flag in ("--verbose", "--budget", "--json", "--export-json"):
             assert flag in r.stdout, f"missing flag {flag}"
 
     def test_json_required_keys(self):
@@ -133,6 +149,24 @@ class TestFactorContract:
     def test_plain_output_is_not_repr(self):
         r = cli("factor", "91")
         assert r.returncode == 0
+        assert "FactorResult(" not in r.stdout
+
+    def test_export_json_writes_file(self, tmp_path):
+        out = tmp_path / "factor.json"
+        r = cli("factor", "91", "--export-json", str(out))
+        assert r.returncode == 0
+        assert out.exists()
+        import json
+        d = json.loads(out.read_text())
+        assert d["command"] == "factor"
+        assert d["factors"]["7"] == 1
+        assert d["factors"]["13"] == 1
+
+    def test_export_json_without_json_flag_still_prints_terminal(self, tmp_path):
+        out = tmp_path / "factor.json"
+        r = cli("factor", "91", "--export-json", str(out))
+        assert r.returncode == 0
+        assert out.exists()
         assert "FactorResult(" not in r.stdout
 
 

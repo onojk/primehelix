@@ -133,7 +133,9 @@ def _write_json(path: str, payload: dict):
 @click.option("--helix", is_flag=True, help="Render ASCII double-helix visualization")
 @click.option("--residue", is_flag=True, help="Show residue/arithmetic-family profile")
 @click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
-def classify(n, coil, helix, residue, as_json):
+@click.option("--export-json", "export_json_path", default=None, type=str,
+              help="Write JSON result to this file")
+def classify(n, coil, helix, residue, as_json, export_json_path):
     from .core.factor import classify as do_classify
     from .geometry.residue import residue_profile
     from .geometry.coil import CoilBalance, coil_footprint
@@ -151,16 +153,22 @@ def classify(n, coil, helix, residue, as_json):
             if coil or helix:
                 coil_data = coil_footprint(N, primes[0], primes[1])
 
+    payload = build_json_result(
+        result,
+        command="classify",
+        classification=classification,
+        coil=coil_data,
+        residue=res,
+    )
+    if coil_balance and not coil_data:
+        payload["structure"] = structure_summary(classification, coil=coil_balance, residue=res)
+
+    if export_json_path:
+        _write_json(export_json_path, payload)
+        if not as_json:
+            console.print(f"[green]JSON written to {export_json_path}[/green]")
+
     if as_json:
-        payload = build_json_result(
-            result,
-            command="classify",
-            classification=classification,
-            coil=coil_data,
-            residue=res,
-        )
-        if coil_balance and not coil_data:
-            payload["structure"] = structure_summary(classification, coil=coil_balance, residue=res)
         print_json(payload)
         return
 
@@ -187,16 +195,24 @@ def classify(n, coil, helix, residue, as_json):
 @click.option("--verbose", is_flag=True, help="Show pipeline steps")
 @click.option("--budget", default=10000, show_default=True, type=int, help="Time budget in ms")
 @click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
-def factor(n, verbose, budget, as_json):
+@click.option("--export-json", "export_json_path", default=None, type=str,
+              help="Write JSON result to this file")
+def factor(n, verbose, budget, as_json, export_json_path):
     from .core.factor import factor as do_factor
 
     N = _parse_n(n)
     result = do_factor(N, budget_ms=budget)
 
+    payload = build_json_result(result, command="factor")
+    payload.pop("classification", None)
+    payload["steps"] = list(result.steps or []) if verbose else []
+
+    if export_json_path:
+        _write_json(export_json_path, payload)
+        if not as_json:
+            console.print(f"[green]JSON written to {export_json_path}[/green]")
+
     if as_json:
-        payload = build_json_result(result, command="factor")
-        payload.pop("classification", None)
-        payload["steps"] = list(result.steps or []) if verbose else []
         print_json(payload)
         return
 
