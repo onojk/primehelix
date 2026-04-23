@@ -5,6 +5,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from primehelix import __version__
 from primehelix.display.json_output import (
     build_json_result,
     print_json,
@@ -25,7 +26,7 @@ Examples:
   primehelix compare-ranges --a-start 10 --a-stop 20 --b-start 20 --b-stop 30 --top-delta 5
   primehelix structure-time-series --start 1 --stop 100000 --window 10000 --step 10000 --only-classification semiprime --plot ts.png
 """)
-@click.version_option("0.2.0", prog_name="primehelix")
+@click.version_option(__version__, prog_name="primehelix")
 def main():
     pass
 
