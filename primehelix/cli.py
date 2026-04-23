@@ -22,13 +22,14 @@ def main():
 
     \b
     Commands:
-      classify   Classify n as prime / semiprime / composite
-      factor     Full factoring pipeline (trial→p-1→p+1→rho→ecm→qs)
-      coil       Conical helix footprint for semiprimes
-      bitbucket  Bit-bucket placement and prime density analysis
-      scan       Wheel-accelerated range scanner to CSV
-      ecm        Lenstra ECM — elliptic curve factoring
-      qs         Quadratic Sieve factoring
+      classify        Classify n as prime / semiprime / composite
+      factor          Full factoring pipeline (trial→p-1→p+1→rho→ecm→qs)
+      coil            Conical helix footprint for semiprimes
+      bitbucket       Bit-bucket placement and prime density analysis
+      scan            Wheel-accelerated range scanner to CSV
+      structure-scan  Aggregate structural identities across a range
+      ecm             Lenstra ECM — elliptic curve factoring
+      qs              Quadratic Sieve factoring
 
     \b
     Output modes:
@@ -46,6 +47,23 @@ def _print_residue_profile(residue: dict):
         table.add_row(str(key), str(value))
 
     console.print(table)
+
+
+def _print_structure_summary(summary: dict, limit: int = 20):
+    counts = summary["counts"]
+    total = summary["total"]
+
+    table = Table(title="structure summary")
+    table.add_column("structure")
+    table.add_column("count", justify="right")
+    table.add_column("percent", justify="right")
+
+    for label, count in counts.most_common(limit):
+        pct = (count / total * 100.0) if total else 0.0
+        table.add_row(label, str(count), f"{pct:.2f}%")
+
+    console.print(table)
+    console.print(f"[dim]total numbers scanned: {total}[/dim]")
 
 
 @main.command()
@@ -280,6 +298,40 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
         return
 
     print_factor(result, verbose=verbose)
+
+
+@main.command("structure-scan")
+@click.option("--start", required=True, type=int)
+@click.option("--stop", required=True, type=int)
+@click.option("--budget", default=2000, show_default=True, help="Per-number budget in ms")
+@click.option("--limit", default=20, show_default=True, help="Maximum number of structure rows to show")
+@click.option("--json", "as_json", is_flag=True, help="Output machine-readable JSON")
+def structure_scan(start: int, stop: int, budget: int, limit: int, as_json: bool):
+    """
+    Aggregate structural identities across a numeric range [START, STOP).
+    """
+    from .core.factor import classify as do_classify
+    from .scan.structure_summary import summarize_range
+
+    if stop <= start:
+        console.print("[red]Error:[/red] stop must be greater than start.")
+        sys.exit(1)
+
+    summary = summarize_range(start, stop, classify_fn=do_classify, budget_ms=budget)
+
+    if as_json:
+        payload = {
+            "command": "structure-scan",
+            "start": start,
+            "stop": stop,
+            "budget_ms": budget,
+            "total": summary["total"],
+            "counts": dict(summary["counts"]),
+        }
+        print_json(payload)
+        return
+
+    _print_structure_summary(summary, limit=limit)
 
 
 @main.command()

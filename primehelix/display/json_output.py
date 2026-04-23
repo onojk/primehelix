@@ -24,10 +24,6 @@ def _factorization_string(result, ascii_only=True):
 
 
 def _coil_insight(coil):
-    """
-    Plain-English interpretation of coil geometry for JSON output.
-    Uses bit_gap and balance heuristics only.
-    """
     if coil is None:
         return None
 
@@ -66,6 +62,47 @@ def _serialize_coil(coil):
     return data
 
 
+def structure_summary(classification, coil=None, residue=None):
+    """
+    Public compact structural identity string for scripting and aggregation.
+
+    Examples:
+      prime | pythagorean
+      prime | gaussian
+      semiprime | balanced | mod4_1x1
+      semiprime | lopsided | mod4_1x3
+      composite
+      invalid
+    """
+    parts = []
+
+    if classification:
+        parts.append(classification.lower())
+
+    if coil is not None:
+        bit_gap = getattr(coil, "bit_gap", None)
+        balance = getattr(coil, "balance", None)
+
+        if bit_gap is not None and balance is not None:
+            if bit_gap <= 1 and balance < 0.15:
+                parts.append("balanced")
+            elif bit_gap <= 8 and balance < 10.0:
+                parts.append("moderate")
+            else:
+                parts.append("lopsided")
+
+    if residue:
+        pair = residue.get("semiprime_mod4_pair")
+        if pair:
+            parts.append(f"mod4_{pair}")
+
+        family = residue.get("prime_family")
+        if family:
+            parts.append(family)
+
+    return " | ".join(parts) if parts else None
+
+
 def build_json_result(
     result,
     command: str,
@@ -92,6 +129,10 @@ def build_json_result(
 
     if residue is not None:
         payload["residue"] = residue
+
+    structure = structure_summary(classification, coil=coil, residue=residue)
+    if structure is not None:
+        payload["structure"] = structure
 
     return payload
 
