@@ -11,6 +11,8 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 
+VALID_CLASSIFICATIONS: frozenset[str] = frozenset({"prime", "semiprime", "composite", "invalid"})
+
 
 @dataclass
 class ScanResult:

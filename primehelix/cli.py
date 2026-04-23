@@ -9,6 +9,7 @@ from rich.table import Table
 
 from primehelix import __version__
 from primehelix.analysis import scan_range, compare_summaries, build_time_series
+from primehelix.schema import VALID_CLASSIFICATIONS
 from primehelix.display.json_output import (
     build_json_result,
     label_entropy,
@@ -212,7 +213,8 @@ def factor(n, verbose, budget, as_json):
 @click.option("--stop", required=True, type=int)
 @click.option("--json", "as_json", is_flag=True)
 @click.option("--profile", is_flag=True, help="Include factorization method distribution")
-@click.option("--only-classification", type=str)
+@click.option("--only-classification",
+              type=click.Choice(sorted(VALID_CLASSIFICATIONS), case_sensitive=False))
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write label counts to CSV at this path")
@@ -288,7 +290,8 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
 @click.option("--b-stop", required=True, type=int)
 @click.option("--top-delta", type=int)
 @click.option("--json", "as_json", is_flag=True)
-@click.option("--only-classification", type=str)
+@click.option("--only-classification",
+              type=click.Choice(sorted(VALID_CLASSIFICATIONS), case_sensitive=False))
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write comparison rows to CSV at this path")
@@ -376,7 +379,8 @@ def compare_ranges(
 @click.option("--top", default=5, show_default=True, type=int, help="Number of structure series to plot")
 @click.option("--plot", "plot_path", default=None, type=str, help="Save plot to this path (PNG)")
 @click.option("--json", "as_json", is_flag=True)
-@click.option("--only-classification", type=str)
+@click.option("--only-classification",
+              type=click.Choice(sorted(VALID_CLASSIFICATIONS), case_sensitive=False))
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write per-window series data to CSV at this path")

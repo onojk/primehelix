@@ -10,7 +10,7 @@ import sys
 import time
 from collections import Counter
 
-from .schema import CompareRow, ScanResult, TimeSeriesResult, WindowSummary
+from .schema import VALID_CLASSIFICATIONS, CompareRow, ScanResult, TimeSeriesResult, WindowSummary
 
 
 def _report_progress(i: int, n: int, span: int, t0: float) -> None:
@@ -38,6 +38,12 @@ def scan_range(
                               skips all geometry, ~9% faster on unfiltered scans, much faster
                               when combined with only_classification filtering
     """
+    if only_classification is not None and only_classification.lower() not in VALID_CLASSIFICATIONS:
+        raise ValueError(
+            f"unknown classification {only_classification!r}; "
+            f"valid values: {sorted(VALID_CLASSIFICATIONS)}"
+        )
+
     from .core.factor import classify as do_classify
 
     _fast = detail == "classification"

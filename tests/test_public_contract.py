@@ -167,6 +167,18 @@ class TestStructureScanContract:
         for label in d["counts"]:
             assert label.startswith("prime"), f"non-prime label: {label}"
 
+    def test_invalid_classification_rejected(self):
+        r = cli("structure-scan", "--start", "1", "--stop", "100",
+                "--only-classification", "banana", "--json")
+        assert r.returncode != 0
+        assert "banana" in r.stderr or "invalid" in r.stderr.lower()
+
+    def test_only_classification_case_insensitive(self):
+        d = cli_json("structure-scan", "--start", "1", "--stop", "200",
+                     "--only-classification", "Prime", "--json")
+        for label in d["counts"]:
+            assert label.startswith("prime"), f"non-prime label: {label}"
+
     def test_profile_flag_adds_methods(self):
         d = cli_json("structure-scan", "--start", "1", "--stop", "200",
                      "--profile", "--json")

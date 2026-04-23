@@ -12,6 +12,7 @@ update the fixture values here and document why in the commit message.
 import pytest
 from primehelix.analysis import scan_range, compare_summaries
 from primehelix.display.json_output import label_entropy
+from primehelix.schema import VALID_CLASSIFICATIONS
 
 
 FIXTURE_RANGE = (1, 10000)
@@ -148,3 +149,26 @@ class TestFastMode:
         fast = scan_range(1, 1000, only_classification="prime", detail="classification")
         full = scan_range(1, 1000, only_classification="prime")
         assert fast.total == full.total
+
+
+class TestClassificationValidation:
+    def test_valid_classifications_are_known(self):
+        assert VALID_CLASSIFICATIONS == {"prime", "semiprime", "composite", "invalid"}
+
+    def test_invalid_raises_value_error(self):
+        with pytest.raises(ValueError, match="unknown classification"):
+            scan_range(1, 100, only_classification="banana")
+
+    def test_error_message_names_the_bad_value(self):
+        with pytest.raises(ValueError, match="banana"):
+            scan_range(1, 100, only_classification="banana")
+
+    def test_all_valid_classifications_accepted(self):
+        for cls in VALID_CLASSIFICATIONS:
+            result = scan_range(1, 50, only_classification=cls)
+            assert isinstance(result.total, int)
+
+    def test_case_insensitive_valid_input(self):
+        # Library accepts mixed case — same as the CLI
+        result = scan_range(1, 50, only_classification="Prime")
+        assert isinstance(result.total, int)
