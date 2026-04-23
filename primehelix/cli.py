@@ -210,7 +210,9 @@ def factor(n, verbose, budget, as_json):
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write label counts to CSV at this path")
-def structure_scan(start, stop, as_json, profile, only_classification, only_structure, export_csv):
+@click.option("--fast", "fast_mode", is_flag=True,
+              help="Skip geometry — return classification-only labels (faster for large ranges)")
+def structure_scan(start, stop, as_json, profile, only_classification, only_structure, export_csv, fast_mode):
     span = stop - start
     summary = scan_range(
         start, stop,
@@ -218,6 +220,7 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
         only_classification=only_classification,
         only_structure=only_structure,
         progress=span > 10_000 and not as_json,
+        detail="fast" if fast_mode else "full",
     )
 
     if export_csv:
@@ -278,21 +281,26 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write comparison rows to CSV at this path")
+@click.option("--fast", "fast_mode", is_flag=True,
+              help="Skip geometry — return classification-only labels (faster for large ranges)")
 def compare_ranges(
     a_start, a_stop, b_start, b_stop,
-    top_delta, as_json, only_classification, only_structure, export_csv,
+    top_delta, as_json, only_classification, only_structure, export_csv, fast_mode,
 ):
     span_a = a_stop - a_start
     span_b = b_stop - b_start
+    detail = "fast" if fast_mode else "full"
     summary_a = scan_range(
         a_start, a_stop, budget=2000,
         only_classification=only_classification, only_structure=only_structure,
         progress=span_a > 10_000 and not as_json,
+        detail=detail,
     )
     summary_b = scan_range(
         b_start, b_stop, budget=2000,
         only_classification=only_classification, only_structure=only_structure,
         progress=span_b > 10_000 and not as_json,
+        detail=detail,
     )
 
     rows = compare_summaries(summary_a, summary_b)
@@ -366,9 +374,11 @@ def compare_ranges(
 @click.option("--only-structure", type=str)
 @click.option("--export-csv", "export_csv", default=None, type=str,
               help="Write per-window series data to CSV at this path")
+@click.option("--fast", "fast_mode", is_flag=True,
+              help="Skip geometry — return classification-only labels (faster for large ranges)")
 def structure_time_series(
     start, stop, window, step, metric, top,
-    plot_path, as_json, only_classification, only_structure, export_csv,
+    plot_path, as_json, only_classification, only_structure, export_csv, fast_mode,
 ):
     if stop <= start:
         raise click.UsageError("stop must be greater than start")
@@ -384,6 +394,7 @@ def structure_time_series(
         only_classification=only_classification,
         only_structure=only_structure,
         progress=not as_json,
+        detail="fast" if fast_mode else "full",
     )
 
     if not ts.windows:

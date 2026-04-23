@@ -144,7 +144,7 @@ class TestStructureScanContract:
     def test_flags_exist(self):
         r = cli("structure-scan", "--help")
         for flag in ("--start", "--stop", "--json",
-                     "--only-classification", "--only-structure"):
+                     "--only-classification", "--only-structure", "--fast"):
             assert flag in r.stdout, f"missing flag {flag}"
 
     def test_json_required_keys(self):

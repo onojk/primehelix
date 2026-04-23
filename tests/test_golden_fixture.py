@@ -122,3 +122,29 @@ class TestGoldenCompare:
         s1, s2 = half_scans
         assert label_entropy(s1.counts, s1.total) == 2.3308
         assert label_entropy(s2.counts, s2.total) == 2.1401
+
+
+class TestFastMode:
+    def test_fast_total_matches_full(self):
+        fast = scan_range(1, 1000, detail="fast")
+        full = scan_range(1, 1000)
+        assert fast.total == full.total
+
+    def test_fast_labels_are_classification_only(self):
+        fast = scan_range(1, 1000, detail="fast")
+        allowed = {"prime", "semiprime", "composite", "invalid"}
+        assert set(fast.counts.keys()) <= allowed
+
+    def test_fast_counts_sum_to_total(self):
+        fast = scan_range(1, 1000, detail="fast")
+        assert sum(fast.counts.values()) == fast.total
+
+    def test_fast_with_only_classification(self):
+        fast = scan_range(1, 1000, only_classification="prime", detail="fast")
+        assert set(fast.counts.keys()) == {"prime"}
+
+    def test_fast_prime_count_matches_full(self):
+        # Total primes found must be the same regardless of detail level
+        fast = scan_range(1, 1000, only_classification="prime", detail="fast")
+        full = scan_range(1, 1000, only_classification="prime")
+        assert fast.total == full.total
