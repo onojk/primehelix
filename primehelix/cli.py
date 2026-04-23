@@ -189,7 +189,7 @@ def _print_compare_ranges(
         title += f" | top delta {top_delta}"
 
     table = Table(title=title)
-    table.add_column("structure")
+    table.add_column("structure", no_wrap=True)
     table.add_column(f"{label_a} count", justify="right")
     table.add_column(f"{label_a} %", justify="right")
     table.add_column(f"{label_b} count", justify="right")
