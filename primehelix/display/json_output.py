@@ -1,4 +1,5 @@
 import json
+import math
 
 
 def _factor_dict(result):
@@ -150,6 +151,20 @@ def build_json_result(
         payload["structure"] = structure
 
     return payload
+
+
+def label_entropy(counts: dict, total: int) -> float | None:
+    """Shannon entropy (bits) of a structure-label distribution.
+
+    Returns None if total is 0. A single-label distribution has entropy 0;
+    a uniform distribution over k labels has entropy log2(k).
+    """
+    if not total:
+        return None
+    return round(
+        -sum((c / total) * math.log2(c / total) for c in counts.values() if c > 0),
+        4,
+    )
 
 
 def print_json(payload):

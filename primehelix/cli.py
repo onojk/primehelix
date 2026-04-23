@@ -34,6 +34,13 @@ def main():
 # helpers
 # -----------------------------
 
+def _parse_n(raw: str) -> int:
+    try:
+        return int(raw)
+    except ValueError:
+        raise click.BadParameter(f"expected an integer, got {raw!r}")
+
+
 def _print_residue_profile(residue: dict):
     table = Table(title="residue profile")
     table.add_column("field")
@@ -248,7 +255,7 @@ def classify(n, coil, helix, residue, as_json):
     from .geometry.residue import residue_profile
     from .geometry.coil import CoilBalance, coil_footprint
 
-    N = int(n)
+    N = _parse_n(n)
     classification, result = do_classify(N)
     res = residue_profile(N, result.factors, classification=classification)
 
@@ -302,7 +309,7 @@ def classify(n, coil, helix, residue, as_json):
 def factor(n, verbose, budget, as_json):
     from .core.factor import factor as do_factor
 
-    N = int(n)
+    N = _parse_n(n)
     result = do_factor(N, budget_ms=budget)
 
     if as_json:
@@ -338,11 +345,13 @@ def structure_scan(start, stop, as_json, only_classification, only_structure):
     )
 
     if as_json:
+        from .display.json_output import label_entropy
         payload = {
             "command": "structure-scan",
             "start": start,
             "stop": stop,
             "total": summary["total"],
+            "entropy": label_entropy(summary["counts"], summary["total"]),
             "counts": dict(summary["counts"]),
         }
         if only_classification:
@@ -405,22 +414,30 @@ def compare_ranges(
         )[:top_delta]
 
     if as_json:
+        from .display.json_output import label_entropy
         payload = {
             "command": "compare-ranges",
             "a": {
                 "start": a_start,
                 "stop": a_stop,
                 "total": summary_a["total"],
+                "entropy": label_entropy(summary_a["counts"], summary_a["total"]),
                 "counts": dict(summary_a["counts"]),
             },
             "b": {
                 "start": b_start,
                 "stop": b_stop,
                 "total": summary_b["total"],
+                "entropy": label_entropy(summary_b["counts"], summary_b["total"]),
                 "counts": dict(summary_b["counts"]),
             },
+            "entropy_delta": None,
             "rows": rows,
         }
+        ea = payload["a"]["entropy"]
+        eb = payload["b"]["entropy"]
+        if ea is not None and eb is not None:
+            payload["entropy_delta"] = round(eb - ea, 4)
 
         if top_delta:
             payload["top_delta"] = top_delta

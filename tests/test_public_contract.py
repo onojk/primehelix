@@ -86,6 +86,15 @@ class TestClassifyContract:
         r = cli("classify", "91", "--helix")
         assert r.returncode == 0
 
+    def test_float_input_clean_error(self):
+        r = cli("classify", "3.7", "--json")
+        assert r.returncode != 0
+        assert "integer" in r.stderr.lower()
+
+    def test_non_numeric_input_clean_error(self):
+        r = cli("classify", "abc", "--json")
+        assert r.returncode != 0
+
 
 # ---------------------------------------------------------------------------
 # factor
@@ -140,8 +149,13 @@ class TestStructureScanContract:
 
     def test_json_required_keys(self):
         d = cli_json("structure-scan", "--start", "1", "--stop", "100", "--json")
-        for key in ("command", "start", "stop", "total", "counts"):
+        for key in ("command", "start", "stop", "total", "entropy", "counts"):
             assert key in d, f"missing key {key}"
+
+    def test_json_entropy_is_nonneg_float(self):
+        d = cli_json("structure-scan", "--start", "1", "--stop", "100", "--json")
+        assert isinstance(d["entropy"], float)
+        assert d["entropy"] >= 0.0
 
     def test_json_counts_nonempty(self):
         d = cli_json("structure-scan", "--start", "1", "--stop", "100", "--json")
@@ -169,8 +183,15 @@ class TestCompareRangesContract:
         d = cli_json("compare-ranges",
                      "--a-start", "1", "--a-stop", "100",
                      "--b-start", "100", "--b-stop", "200", "--json")
-        for key in ("command", "rows"):
+        for key in ("command", "rows", "entropy_delta"):
             assert key in d, f"missing key {key}"
+        assert "entropy" in d["a"] and "entropy" in d["b"]
+
+    def test_json_entropy_delta(self):
+        d = cli_json("compare-ranges",
+                     "--a-start", "1", "--a-stop", "100",
+                     "--b-start", "100", "--b-stop", "200", "--json")
+        assert isinstance(d["entropy_delta"], float)
 
     def test_json_rows_have_expected_keys(self):
         d = cli_json("compare-ranges",

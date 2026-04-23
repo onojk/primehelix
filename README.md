@@ -253,6 +253,14 @@ Divides `[start, stop)` into overlapping or non-overlapping windows, computes st
 | `coil` | classify with `--coil` | geometric footprint + insight string |
 | `residue` | classify | mod4/mod6/mod30 profile |
 
+The `structure-scan` and `compare-ranges` commands also include:
+
+| Field | Command | Notes |
+|-------|---------|-------|
+| `entropy` | structure-scan | Shannon entropy (bits) of the label distribution. 0 = single label, log₂(k) = uniform over k labels |
+| `a.entropy`, `b.entropy` | compare-ranges | Entropy of each range independently |
+| `entropy_delta` | compare-ranges | `b.entropy − a.entropy`; positive = B more diverse |
+
 Breaking changes to this schema will be documented in release notes and accompanied by a minor version bump.
 
 ---
