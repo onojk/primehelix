@@ -110,6 +110,14 @@ balance=87.696, bit_gap=13
                                 +
 ```
 
+The `+` strand is the small factor (13). The `*` strand is the large factor (100003). The shape encodes how the two factors relate in size:
+
+- **Strand separation** reflects the bit-gap — how many binary digits separate the two factors. bit_gap=13 means 100003 is roughly 2¹³ times larger than 13. Wide strands = lopsided.
+- **Balance score** (87.696) is the log-ratio of the two factors. A balanced RSA-like semiprime (e.g. 997 × 1009) produces a tight helix where strands nearly touch. This one is far apart.
+- **The `~` region** marks where the two strands are geometrically closest — the pinch point of the coil.
+
+A wide, open helix means lopsided. A compressed helix means balanced. This is the same information the structure label encodes as text (`lopsided`, `moderate`, `balanced`) — the helix makes it visible instead of named.
+
 **`--json` output:**
 
 ```json
