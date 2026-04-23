@@ -6,34 +6,93 @@
 
 ---
 
-## Concepts
+## Quick look
 
-### Factoring Pipeline
-Numbers are attacked in escalating order of cost:
+```
+$ primehelix classify 2147483646
 
-1. **Trial division** — instant for small factors
-2. **Pollard p−1** — fast when p−1 is smooth
-3. **Williams p+1** — fast when p+1 is smooth
-4. **Pollard Rho (Brent)** — probabilistic, good for mid-range composites
-5. **ECM (Lenstra)** — elliptic curve method, scales to ~60-digit factors
-6. **Quadratic Sieve** — for hard semiprimes where both factors are large
+╭──────────────────────────── classify ────────────────────────────╮
+│  n               │ 2147483646                                     │
+│  bits            │ 31                                             │
+│  digits          │ 10                                             │
+│  classification  │ COMPOSITE                                      │
+│  factorization   │ 2 × 3^2 × 7 × 11 × 31 × 151 × 331            │
+│  method          │ rho                                            │
+│  time            │ 0.4 ms                                         │
+╰────────────────────────────────────────────────────────────────────╯
+```
 
-### Primality Testing
-Uses **Baillie–PSW** (Miller–Rabin base-2 + strong Lucas PRP) — deterministic for all 64-bit integers, no known counterexamples beyond.
+```
+$ primehelix factor 2147483646 --verbose
 
-### Geometric / Coil Model
-Integers are mapped to points on a **conical helix** in 3D space:
-- `r(n) = r₀ + α·n`
-- `θ(n) = 2π·n / L`
-- `z(n) = β·n`
+╭──────────────────────────── factor ──────────────────────────────╮
+│  n              │ 2147483646                                      │
+│  bits           │ 31                                              │
+│  factorization  │ 2 × 3^2 × 7 × 11 × 31 × 151 × 331             │
+│  method         │ rho                                             │
+│  time           │ 0.4 ms                                          │
+│  complete       │ yes                                             │
+╰────────────────────────────────────────────────────────────────────╯
+Pipeline steps:
+  · trial: 2
+  · trial: 3
+  · trial: 3
+  · trial: 7
+  · trial: 11
+  · trial: 31
+  · rho: 151
+```
 
-For a semiprime `n = p·q`, the distances `d(n→q)`, `d(q→p)`, `d(p→1)` along the helix form a normalized "footprint" that characterizes the factor pair geometrically.
+```
+$ primehelix classify 65537
 
-### Bit-Bucket Analysis
-Integers are grouped by bit-length into buckets `[2^(k-1), 2^k − 1]`. Within each bucket, the **offset** `n − 2^(k-1)` normalizes position for cross-scale comparison. Prime density per bucket decays as `≈ 1/(k·ln2)`, matching the Prime Number Theorem in bit-length terms.
+  classification  │ PRIME
+  method          │ bpsw
+```
 
-### Wheel-Accelerated Scanner
-A mod-210 wheel (coprime residues mod 2·3·5·7) skips ~77% of candidates. The scanner is resumable, supports gzip output, and adapts its stride based on local density.
+```
+$ primehelix factor 2147483646 --json
+{"n": 2147483646, "factors": {"2": 1, "3": 2, "7": 1, "11": 1, "31": 1, "151": 1, "331": 1}, "method": "rho", "elapsed_ms": 0.363, "complete": true, "steps": []}
+```
+
+---
+
+## Factoring pipeline
+
+Numbers are attacked in escalating order of cost — each stage is only reached if the previous one doesn't return a factor:
+
+| Stage | Algorithm | Good for |
+|-------|-----------|----------|
+| 1 | **Trial division** | Any factor ≤ 149 |
+| 2 | **Pollard p−1** | Factors with smooth p−1 |
+| 3 | **Williams p+1** | Factors with smooth p+1 |
+| 4 | **Pollard Rho (Brent)** | Mid-range composites |
+| 5 | **Lenstra ECM** | Factors up to ~60 digits |
+| 6 | **Quadratic Sieve** | Hard semiprimes with large factors |
+
+Each stage respects a time budget; the pipeline escalates automatically.
+
+### Primality testing
+
+Uses **Baillie–PSW** (Miller–Rabin base-2 + strong Lucas PRP) — deterministic for all 64-bit integers, no known counterexamples beyond. Any unresolved cofactor is primality-tested before the factorization is marked complete.
+
+---
+
+## Geometric model
+
+### Conical helix
+Integers are mapped to points on a **conical helix** in 3D:
+
+```
+r(n) = r₀ + α·n      (radius grows with n)
+θ(n) = 2π·n / L      (angular position)
+z(n) = β·n           (vertical position)
+```
+
+For a semiprime `n = p·q`, the arc distances `d(n→q)`, `d(q→p)`, `d(p→1)` form a normalized "footprint" that characterizes the factor pair geometrically — balanced RSA-like primes produce a distinct signature from lopsided ones.
+
+### Bit-bucket analysis
+Integers are grouped by bit-length into buckets `[2^(k-1), 2^k − 1]`. Within each bucket, the offset `n − 2^(k-1)` normalizes position for cross-scale comparison. Prime density per bucket decays as `≈ 1/(k·ln2)`, matching the Prime Number Theorem in bit-length terms.
 
 ---
 
@@ -47,62 +106,76 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-**Requirements:** Python 3.10+, gmpy2 (requires libgmp-dev on Linux)
+**Requirements:** Python 3.10+, gmpy2
 
+On Linux, install GMP first:
 ```bash
 sudo apt install libgmp-dev libmpfr-dev libmpc-dev
-pip install gmpy2
+```
+
+### Sync and test
+
+```bash
+cd ~/primehelix && git pull && source .venv/bin/activate && pytest tests/ -v
 ```
 
 ---
 
-## Usage
-
-```
-primehelix <command> [options]
-```
+## Commands
 
 ### classify
+
 ```bash
-primehelix classify 91
-primehelix classify 2147483647
-primehelix classify 110000479000513 --coil
+primehelix classify 91                          # semiprime: 7 × 13
+primehelix classify 2147483647                  # prime (Mersenne M31)
+primehelix classify 110000479000513 --coil      # + conical helix footprint
+primehelix classify 65535 --tangent             # + tangent-split diagnostics
+primehelix classify 2147483646 --json           # machine-readable output
 ```
 
 ### factor
-```bash
-primehelix factor 15
-primehelix factor 110000479000513
-primehelix factor 8633 --method qs
-primehelix factor <big-number> --budget 10000
-```
 
-### scan
 ```bash
-primehelix scan --stop 100000 --out primes.csv
-primehelix scan --start 1000000 --stop 2000000 --mode sampled --out scan.csv.gz
+primehelix factor 2147483646                    # full pipeline, clean output
+primehelix factor 2147483646 --verbose          # show pipeline steps
+primehelix factor 2147483646 --json             # JSON output
+primehelix factor 2147483646 --json --verbose   # JSON with steps array
+primehelix factor 8633 --method qs              # force Quadratic Sieve
+primehelix factor <n> --budget 30000            # extend time budget (ms)
 ```
 
 ### bitbucket
+
 ```bash
 primehelix bitbucket 97
 primehelix bitbucket 65537 --density
 ```
 
 ### coil
+
 ```bash
 primehelix coil 91
 primehelix coil 110000479000513 --signature
 ```
 
-### qs
+### scan
+
 ```bash
-primehelix qs 9804659461513846513
+primehelix scan --stop 100000 --out primes.csv
+primehelix scan --start 1000000 --stop 2000000 --mode sampled --out scan.csv.gz
 ```
 
 ### ecm
+
 ```bash
 primehelix ecm 104729314187 --B1 50000 --curves 100
+```
+
+### qs
+
+```bash
+primehelix qs 8633
+primehelix qs 9804659461513846513
 ```
 
 ---
@@ -111,22 +184,22 @@ primehelix ecm 104729314187 --B1 50000 --curves 100
 
 ```
 primehelix/
-├── cli.py              — Click-based entry point
+├── cli.py              — Click entry point (7 commands)
 ├── core/
-│   ├── primes.py       — BPSW (Miller-Rabin + Lucas), wheel sieve
-│   ├── factor.py       — Full pipeline orchestration
-│   ├── rho.py          — Pollard Rho (Brent, batch-GCD)
+│   ├── primes.py       — BPSW (Miller-Rabin + strong Lucas PRP)
+│   ├── factor.py       — Pipeline orchestration and recursion
+│   ├── rho.py          — Pollard Rho (Brent variant, batch-GCD)
 │   ├── pm1.py          — Pollard p−1 / Williams p+1
-│   └── qs.py           — Quadratic Sieve with GF(2) nullspace
-│   └── ecm.py          — Lenstra ECM (pure Python + gmpy2)
+│   ├── ecm.py          — Lenstra ECM (pure Python + gmpy2)
+│   └── qs.py           — Quadratic Sieve (GF(2) left nullspace)
 ├── geometry/
-│   ├── coil.py         — Conical helix model and footprint
-│   ├── bitbucket.py    — Bit-bucket grouping and density
-│   └── tangent.py      — Tangent-split diagnostics
+│   ├── coil.py         — Conical helix footprint + SHA-256 signatures
+│   ├── bitbucket.py    — Bit-bucket placement and density tables
+│   └── tangent.py      — Equal-split / tangent-split / ideal-split
 ├── scan/
-│   └── wheel.py        — Mod-210 wheel scanner, resumable CSV
+│   └── wheel.py        — Mod-210 wheel scanner, resumable gzip CSV
 └── display/
-    └── output.py       — Rich terminal formatting
+    └── output.py       — Rich terminal panels and tables
 ```
 
 ---
@@ -137,10 +210,10 @@ primehelix/
 
 | Repo | Contribution |
 |------|-------------|
-| `geom_factor` | Quadratic sieve, bit-bucket theory, geometric visualizations |
-| `rsacrack` | Factoring pipeline, coil classifier, Flask API |
-| `ECC-Tools` | ECM via libecm (C reference implementation) |
-| `Cprime` | GMP-backed C CLI (trial + P-1 + Rho) |
+| `geom_factor` | Quadratic Sieve, bit-bucket theory, geometric model |
+| `rsacrack` | Factoring pipeline, coil classifier |
+| `ECC-Tools` | ECM reference (C + libecm) |
+| `Cprime` | GMP-backed C CLI (trial + p−1 + Rho) |
 | `onojk123` | Wheel scanner, tangent prime test |
 
 ---

@@ -35,7 +35,8 @@ def main():
 @click.option("--coil", is_flag=True, help="Show conical helix footprint (semiprimes only)")
 @click.option("--tangent", is_flag=True, help="Show tangent-split diagnostics")
 @click.option("--budget", default=10000, show_default=True, help="Time budget in ms")
-def classify(n: str, coil: bool, tangent: bool, budget: int):
+@click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
+def classify(n: str, coil: bool, tangent: bool, budget: int, as_json: bool):
     """Classify N as prime, semiprime, or composite."""
     from .core.factor import classify as do_classify
     from .display.output import print_classify, print_coil, print_tangent
@@ -51,6 +52,19 @@ def classify(n: str, coil: bool, tangent: bool, budget: int):
         sys.exit(1)
 
     classification, result = do_classify(N, budget_ms=budget)
+
+    if as_json:
+        import json
+        click.echo(json.dumps({
+            "n": N,
+            "classification": classification,
+            "factors": {str(p): e for p, e in sorted(result.factors.items())},
+            "method": result.method,
+            "elapsed_ms": round(result.elapsed_ms, 3),
+            "complete": result.complete,
+        }))
+        return
+
     print_classify(N, classification, result)
 
     if coil and classification == "semiprime":
@@ -85,7 +99,8 @@ def classify(n: str, coil: bool, tangent: bool, budget: int):
 @click.option("--method", type=click.Choice(["auto", "trial", "rho", "pm1", "ecm", "qs"]),
               default="auto", show_default=True)
 @click.option("--verbose", is_flag=True, help="Show pipeline steps")
-def factor(n: str, budget: int, method: str, verbose: bool):
+@click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
+def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
     """Factor N using the full pipeline or a specific method."""
     from .display.output import print_factor
 
@@ -158,6 +173,18 @@ def factor(n: str, budget: int, method: str, verbose: bool):
         else:
             result = FactorResult(n=N, factors={N: 1}, method="qs",
                                   elapsed_ms=(time.monotonic()-t0)*1000, complete=False)
+
+    if as_json:
+        import json
+        click.echo(json.dumps({
+            "n": result.n,
+            "factors": {str(p): e for p, e in sorted(result.factors.items())},
+            "method": result.method,
+            "elapsed_ms": round(result.elapsed_ms, 3),
+            "complete": result.complete,
+            "steps": result.steps if verbose else [],
+        }))
+        return
 
     print_factor(result, verbose=verbose)
 

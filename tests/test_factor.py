@@ -100,3 +100,18 @@ def test_classify_semiprime():
 def test_classify_composite():
     cls, r = classify(2 * 3 * 5 * 7)
     assert cls == "composite"
+
+def test_factor_complete_multi():
+    # 2 × 3^2 × 7 × 11 × 31 × 151 × 331 — previously gave "gave up on 331"
+    n = 2147483646
+    r = factor(n)
+    assert r.complete, "factorization must be marked complete (no gave-up residue)"
+    assert r.factors == {2: 1, 3: 2, 7: 1, 11: 1, 31: 1, 151: 1, 331: 1}
+    assert not any("gave up" in s for s in r.steps)
+
+def test_factor_prime_residue():
+    # Exercises the is_prime check in the gave-up branch: 331 is prime and
+    # must be recorded as a factor, not left as an unresolved composite.
+    r = factor(331)
+    assert r.factors == {331: 1}
+    assert r.complete
