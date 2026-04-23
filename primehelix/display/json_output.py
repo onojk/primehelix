@@ -66,11 +66,26 @@ def structure_summary(classification, coil=None, residue=None):
     """
     Public compact structural identity string for scripting and aggregation.
 
+    Label format (parts joined by " | "):
+      Part 1 — classification: "prime", "semiprime", "composite", "invalid"
+      Part 2 — balance (semiprimes with 2 distinct primes only):
+                "balanced"  bit_gap ≤ 1 and balance < 0.15
+                "moderate"  bit_gap ≤ 8 and balance < 10.0
+                "lopsided"  otherwise
+                omitted for prime squares (p²) — only one distinct prime
+      Part 3 — residue family:
+                primes:      "pythagorean" (p≡1 mod4), "gaussian" (p≡3 mod4)
+                             omitted for p=2
+                semiprimes:  "mod4_1x1", "mod4_1x3", "mod4_3x3",
+                             "mod4_2x1", "mod4_2x3", "mod4_2x2" (factor of 2)
+
     Examples:
       prime | pythagorean
       prime | gaussian
+      prime                           (p=2)
       semiprime | balanced | mod4_1x1
       semiprime | lopsided | mod4_1x3
+      semiprime | mod4_3x3            (p² form — no balance tier)
       composite
       invalid
     """

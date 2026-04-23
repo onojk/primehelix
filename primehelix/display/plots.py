@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from collections import Counter
 import math
-import matplotlib
 
-# Headless-safe backend
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+def _require_matplotlib():
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        return plt
+    except ImportError:
+        raise ImportError(
+            "matplotlib is required for plotting. "
+            "Install it with: pip install 'primehelix[plot]'"
+        )
 
 
 def _classification_prefix(label: str) -> str:
@@ -47,6 +54,7 @@ def save_structure_plot(
     title: str = "Structure Distribution",
     limit: int = 20,
 ):
+    plt = _require_matplotlib()
     items = _sorted_items(counts, limit)
 
     if not items:
@@ -92,6 +100,7 @@ def save_compare_plot(
     limit: int = 20,
     top_delta: int | None = None,
 ):
+    plt = _require_matplotlib()
     labels = set(counts_a.keys()) | set(counts_b.keys())
     items = [(label, counts_a.get(label, 0), counts_b.get(label, 0)) for label in labels]
 
@@ -165,6 +174,7 @@ def save_structure_time_series_plot(
     title: str = "Structure Time Series",
     ylabel: str = "Percent",
 ):
+    plt = _require_matplotlib()
     if not series_map:
         raise ValueError("No time series data available to plot.")
     if not window_labels:

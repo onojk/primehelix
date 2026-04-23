@@ -25,7 +25,7 @@ Examples:
   primehelix compare-ranges --a-start 10 --a-stop 20 --b-start 20 --b-stop 30 --top-delta 5
   primehelix structure-time-series --start 1 --stop 100000 --window 10000 --step 10000 --only-classification semiprime --plot ts.png
 """)
-@click.version_option("0.1.2", prog_name="primehelix")
+@click.version_option("0.2.0", prog_name="primehelix")
 def main():
     pass
 
@@ -468,8 +468,6 @@ def structure_time_series(
     only_classification,
     only_structure,
 ):
-    from .display.plots import save_structure_time_series_plot
-
     if stop <= start:
         raise click.UsageError("stop must be greater than start")
     if window <= 0:
@@ -544,6 +542,10 @@ def structure_time_series(
         title += f" | structure~{only_structure}"
 
     if plot_path:
+        try:
+            from .display.plots import save_structure_time_series_plot
+        except ImportError as e:
+            raise click.UsageError(str(e))
         save_structure_time_series_plot(
             series_map=series_map,
             window_labels=window_labels,

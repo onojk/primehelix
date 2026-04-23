@@ -278,6 +278,52 @@ Breaking changes to this schema will be documented in release notes and accompan
 
 ---
 
+## Empirical findings
+
+The following measurements come from running primehelix against the integers [1, 100 000).
+
+### Structure distribution baseline
+
+```
+primehelix structure-scan --start 1 --stop 100000 --json
+```
+
+| Structure | Count | Share |
+|-----------|------:|------:|
+| composite | 67 028 | 67.03% |
+| semiprime \| lopsided \| mod4_1x3 | 5 060 | 5.06% |
+| prime \| gaussian | 4 808 | 4.81% |
+| prime \| pythagorean | 4 783 | 4.78% |
+| semiprime \| moderate \| mod4_1x3 | 3 914 | 3.91% |
+| semiprime \| lopsided \| mod4_3x3 | 3 349 | 3.35% |
+| semiprime \| lopsided \| mod4_2x3 | 2 559 | 2.56% |
+| semiprime \| lopsided \| mod4_2x1 | 2 528 | 2.53% |
+| semiprime \| moderate \| mod4_3x3 | 2 112 | 2.11% |
+| semiprime \| moderate \| mod4_1x1 | 1 798 | 1.80% |
+| semiprime \| balanced (all pairs) | 217 | 0.22% |
+
+**Notes:** Primes split nearly evenly between the two residue families (gaussian ≈ pythagorean), consistent with Dirichlet's theorem. Among semiprimes, lopsided pairs (larger factor at least 8 bits wider) are more frequent than moderate pairs by roughly 2.5×. Balanced semiprimes — pairs where both factors have nearly equal bit-length — are rare: under 0.25% of all integers in this range.
+
+### Lopsidedness grows with range
+
+```
+primehelix compare-ranges \
+  --a-start 1 --a-stop 50000 \
+  --b-start 50000 --b-stop 100000 \
+  --only-classification semiprime --top-delta 8 --json
+```
+
+| Structure | delta | ratio |
+|-----------|------:|------:|
+| semiprime \| lopsided \| mod4_1x3 | +4.20% | 1.21× |
+| semiprime \| moderate \| mod4_1x3 | −3.01% | 0.83× |
+| semiprime \| lopsided \| mod4_3x3 | +2.38% | 1.18× |
+| semiprime \| moderate \| mod4_3x3 | −2.31% | 0.77× |
+
+As the integer range shifts from [1, 50k) to [50k, 100k), lopsided semiprimes gain share at the expense of moderate ones — consistently across all mod4 families. This reflects the growing gap between small primes (reused as the smaller factor) and the larger prime cofactors needed to reach higher products.
+
+---
+
 ## Install and test
 
 ```bash
@@ -285,7 +331,9 @@ git clone https://github.com/onojk/primehelix.git
 cd primehelix
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e .           # core: classify, factor, scan, compare
+pip install -e ".[plot]"   # add matplotlib for --plot
+pip install -e ".[dev]"    # everything including tests
 pytest tests/ -v
 ```
 

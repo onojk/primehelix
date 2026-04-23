@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "primehelix"
-version = "0.1.0"
+version = "0.2.0"
 description = "Unified console toolkit for prime number theory, factorization, and geometric number exploration"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -16,7 +16,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "pytest-timeout"]
+plot = ["matplotlib>=3.5"]
+dev = ["pytest>=7.0", "pytest-timeout", "matplotlib>=3.5"]
 
 [project.scripts]
 primehelix = "primehelix.cli:main"
