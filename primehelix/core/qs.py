@@ -69,37 +69,36 @@ def _trial_smooth(val: int, FB):
     return fac, tmp
 
 
-def _gf2_nullspace(mat):
+def _gf2_left_nullspace(mat):
     """
-    GF(2) row reduction; returns all nullspace vectors found.
-    Tries every free column, not just the first.
+    Find all vectors v (length = nrows) such that v @ mat ≡ 0 (mod 2).
+    i.e., left null space — subsets of rows whose XOR is the zero row.
+    Uses augmented row reduction: [mat | I], tracking row operations.
+    Returns list of length-nrows binary indicator vectors.
     """
+    nrows = len(mat)
+    if nrows == 0:
+        return []
+    ncols = len(mat[0])
     rows = [row[:] for row in mat]
-    m, n = len(rows), len(rows[0]) if rows else 0
-    pivcol = {}
+    # hist[i] tracks which original rows contributed to row i
+    hist = [[1 if j == i else 0 for j in range(nrows)] for i in range(nrows)]
+
     r = 0
-    for c in range(n):
-        pivot = next((rr for rr in range(r, m) if rows[rr][c]), None)
+    for c in range(ncols):
+        pivot = next((rr for rr in range(r, nrows) if rows[rr][c]), None)
         if pivot is None:
             continue
         rows[r], rows[pivot] = rows[pivot], rows[r]
-        for rr in range(m):
+        hist[r], hist[pivot] = hist[pivot], hist[r]
+        for rr in range(nrows):
             if rr != r and rows[rr][c]:
-                rows[rr] = [rows[rr][j] ^ rows[r][j] for j in range(n)]
-        pivcol[r] = c
+                rows[rr] = [rows[rr][j] ^ rows[r][j] for j in range(ncols)]
+                hist[rr] = [hist[rr][j] ^ hist[r][j] for j in range(nrows)]
         r += 1
 
-    free_cols = [c for c in range(n) if c not in pivcol.values()]
-    vectors = []
-    for fc in free_cols:
-        v = [0] * n
-        v[fc] = 1
-        for row_idx in range(r - 1, -1, -1):
-            pc = pivcol[row_idx]
-            s = sum(rows[row_idx][c] * v[c] for c in range(pc + 1, n)) % 2
-            v[pc] = s
-        vectors.append(v)
-    return vectors
+    # Zero rows in reduced matrix → linear dependencies among original rows
+    return [hist[rr] for rr in range(r, nrows)]
 
 
 def quadratic_sieve(N: int, B_scale: float = 5.0,
@@ -185,13 +184,13 @@ def quadratic_sieve(N: int, B_scale: float = 5.0,
                 row[idx] = e & 1
         mat.append(row)
 
-    nullvecs = _gf2_nullspace(mat)
+    nullvecs = _gf2_left_nullspace(mat)
     if not nullvecs:
         return None
 
     for vec in nullvecs:
         X = 1
-        exp_sum = defaultdict(int)
+        exp_sum: dict[int, int] = defaultdict(int)
         neg_count = 0
         for take, (Ax, fac, neg) in zip(vec, rels):
             if not take:
@@ -203,7 +202,7 @@ def quadratic_sieve(N: int, B_scale: float = 5.0,
                 neg_count += 1
 
         if neg_count % 2 != 0:
-            continue
+            continue  # product of Qx values is negative — skip
 
         Y = 1
         for p, e in exp_sum.items():

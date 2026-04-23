@@ -41,10 +41,11 @@ def test_pm1_smooth():
     assert pollard_pm1(2 * 97) in (2, 97)
 
 def test_pm1_finds_smooth_factor():
-    # p = 17 has p-1 = 16 = 2^4 — very smooth
-    n = 17 * 19
-    f = pollard_pm1(n, B1=100)
-    assert f is not None and n % f == 0
+    # p=17, p-1=16=2^4 (smooth to B1=20)
+    # q=1013, q-1=1012=4*11*23 (23>20, not smooth — so gcd gives 17 not n)
+    n = 17 * 1013
+    f = pollard_pm1(n, B1=20)
+    assert f is not None and n % f == 0 and 1 < f < n
 
 
 # --- ECM ---
@@ -67,7 +68,8 @@ def test_qs_small():
     assert f in (89, 97)
 
 def test_qs_medium():
-    n = 10007 * 10037
+    # Two 4-digit primes, both > trial division limit
+    n = 1009 * 1013
     f = quadratic_sieve(n)
     assert f is not None and n % f == 0 and 1 < f < n
 
