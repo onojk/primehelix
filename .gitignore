@@ -21,6 +21,7 @@ build/
 *.csv
 *.csv.gz
 *.ckpt
+!datasets/*.csv
 
 # Media / generated outputs
 media/

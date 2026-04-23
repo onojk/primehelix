@@ -1,0 +1,17 @@
+label,count,percent
+semiprime | lopsided | mod4_1x3,573381,30.1094
+semiprime | lopsided | mod4_3x3,347652,18.2559
+semiprime | lopsided | mod4_1x1,225986,11.8670
+semiprime | moderate | mod4_1x3,197880,10.3911
+semiprime | lopsided | mod4_2x3,174295,9.1526
+semiprime | lopsided | mod4_2x1,174172,9.1461
+semiprime | moderate | mod4_3x3,101438,5.3267
+semiprime | moderate | mod4_1x1,96420,5.0632
+semiprime | balanced | mod4_1x3,6395,0.3358
+semiprime | balanced | mod4_3x3,3125,0.1641
+semiprime | balanced | mod4_1x1,3089,0.1622
+semiprime | mod4_3x3,225,0.0118
+semiprime | mod4_1x1,220,0.0116
+semiprime | moderate | mod4_2x3,24,0.0013
+semiprime | moderate | mod4_2x1,21,0.0011
+semiprime | mod4_2x2,1,0.0001
