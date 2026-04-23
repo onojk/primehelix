@@ -1,134 +1,84 @@
-# primehelix
+# PrimeHelix
 
-**primehelix** is a command-line toolkit for exploring the *structure of integers*.
+PrimeHelix is a computational and visualization toolkit for exploring the structural patterns of integers—especially primes, semiprimes, and composite numbers—through classification, residue analysis, and time-series behavior.
 
-Most tools stop at factorization.  
-**primehelix goes further: it reveals how numbers are built.**
-
----
-
-## ✨ Features
-
-- Prime / semiprime / composite classification
-- Multi-stage factoring pipeline  
-  *(trial → p-1 → p+1 → rho → ECM → QS)*
-- Residue-based structure labeling (modular patterns)
-- Geometric interpretation (conical helix / “coil”)
-- Structural comparison across integer ranges
-- Top-change detection (`--top-delta`)
-- JSON, CSV, JSONL outputs for automation
-- Plot generation (matplotlib)
-- Fully regression-tested core
+The goal is to move beyond simple counting and uncover emergent structure in number distributions.
 
 ---
 
-## 🚀 Installation
+## Features
 
-```bash
+- Fast integer classification:
+  - Prime
+  - Semiprime
+  - Composite
+- Structural labeling:
+  - Balanced vs lopsided factorization
+- Residue analysis:
+  - mod 4 pair structures (e.g., 1×3, 3×3, etc.)
+- Time-series analysis:
+  - Sliding window structure distribution
+- Visualization:
+  - Plotting of structural trends over ranges
+  - ASCII helix representation (experimental)
+
+---
+
+## Installation
+
+Clone the repo and install dependencies:
+
 git clone https://github.com/onojk/primehelix.git
 cd primehelix
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
-⚡ Quick Start
-Classify a number
-primehelix classify 1300039 --coil --residue
-Scan a range
-primehelix structure-scan --start 1 --stop 100
-Generate a plot
-primehelix structure-scan --start 1 --stop 100 --plot structures.png
-Compare two ranges
+
+---
+
+## Example Usage
+
+### Structure Time Series (Semiprimes)
+
+primehelix structure-time-series \
+  --start 1 --stop 100000 \
+  --window 10000 --step 10000 \
+  --only-classification semiprime \
+  --only-structure lopsided \
+  --plot lopsided_ts.png
+
+---
+
+### Compare Two Ranges
+
 primehelix compare-ranges \
-  --a-start 1 --a-stop 100 \
-  --b-start 100 --b-stop 200
-Focus on biggest changes
-primehelix compare-ranges \
-  --a-start 1 --a-stop 100 \
-  --b-start 100 --b-stop 200 \
-  --top-delta 5
-🧠 Core Concepts
-1. Classification
+  --a-start 1 --a-stop 50000 \
+  --b-start 50000 --b-stop 100000 \
+  --only-classification semiprime \
+  --top-delta 15
 
-Each integer is classified as:
+---
 
-prime
-semiprime
-composite
-2. Residue Structure
+## Key Observations
 
-primehelix labels numbers using modular patterns.
+- mod4_1×3 becomes dominant (~35%) as range increases  
+- mod4_3×3 stabilizes (~22%)  
+- Structures involving even factors decline over scale  
+- mod4_1×1 increases gradually  
 
-Examples:
+This suggests convergence toward a stable residue distribution in semiprimes.
 
-prime | gaussian
-prime | pythagorean
-semiprime | moderate | mod4_1x3
-composite
-3. Geometric Structure (Coil)
+---
 
-For semiprimes:
+## Development
 
-n = p × q
+Run tests:
 
-Mapped to a conical helix:
-
-balance → |p − q| / √n
-bit-gap → difference in bit-length
-structural symmetry
-4. Structural Comparison
-
-Compare how number structure evolves across ranges:
-
-primehelix compare-ranges --a-start 10 --a-stop 20 --b-start 20 --b-stop 30
-
-Output includes:
-
-counts
-percentages
-delta (percentage-point change)
-ratio (relative change)
-emergence / disappearance of structures
-5. Top Structural Changes
---top-delta N
-
-Shows only the most significant structural shifts.
-
-📊 Output Modes
-Mode	Description
-default	rich CLI tables
---json	structured output
---jsonl	streaming records
---csv	spreadsheet export
---plot	PNG visualizations
-🧪 Testing
 pytest tests/ -v
 
-Includes:
+---
 
-factoring correctness
-classification
-residue structure
-JSON schema validation
-structure scanning
-compare-ranges analytics
-📁 Project Structure
-primehelix/
-  core/        factoring + primality
-  geometry/    coil + residue systems
-  display/     CLI + plotting
-  scan/        range analysis
-  cli.py       entrypoint
-📌 Version
+## Author
 
-v0.1.2
-
-Includes:
-
-compare-ranges analytics
-ratio + delta metrics
-top-delta filtering
-plotting improvements
-36 passing tests
-📜 License
-
-MIT
+Jonathan Kendall  
+https://github.com/onojk
