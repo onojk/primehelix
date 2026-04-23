@@ -39,9 +39,10 @@ def _jacobi(a: int, n: int) -> int:
     while a:
         t = a & -a
         v2 = (t.bit_length() - 1)
-        if v2:
+        if v2 & 1:
             if n % 8 in (3, 5):
                 result = -result
+        if v2:
             a >>= v2
         if a % 4 == 3 and n % 4 == 3:
             result = -result
