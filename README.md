@@ -1,5 +1,10 @@
 # primehelix
 
+[![PyPI version](https://img.shields.io/pypi/v/primehelix.svg)](https://pypi.org/project/primehelix/)
+[![Python versions](https://img.shields.io/pypi/pyversions/primehelix.svg)](https://pypi.org/project/primehelix/)
+[![CI](https://github.com/onojk/primehelix/actions/workflows/ci.yml/badge.svg)](https://github.com/onojk/primehelix/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Structural analysis for integers — explore how numbers are built, not just what they are.**
 
 Most number theory tools answer *what*: is this prime, what are the factors. primehelix also answers *how*: what arithmetic family does each factor belong to, how balanced is the factor pair, where does the number sit on a conical helix, and how do these structural patterns shift across large ranges.
@@ -8,13 +13,17 @@ Every integer gets a compact **structure label** — `semiprime | lopsided | mod
 
 ---
 
-## Quick start
+## Install
 
 ```bash
-git clone https://github.com/onojk/primehelix.git
-cd primehelix
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
+pip install primehelix                # core: classify, factor, scan, compare
+pip install 'primehelix[plot]'        # add matplotlib for --plot
+```
+
+On Linux, GMP is required for full performance (gmpy2):
+```bash
+sudo apt install libgmp-dev libmpfr-dev libmpc-dev
+pip install primehelix
 ```
 
 ```bash
@@ -24,9 +33,12 @@ primehelix structure-scan --start 1 --stop 100000
 primehelix compare-ranges --a-start 1 --a-stop 50000 --b-start 50000 --b-stop 100000 --top-delta 6
 ```
 
-On Linux, install GMP before `pip install`:
+**From source:**
 ```bash
-sudo apt install libgmp-dev libmpfr-dev libmpc-dev
+git clone https://github.com/onojk/primehelix.git
+cd primehelix
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 ```
 
 ---
@@ -350,16 +362,13 @@ As the range shifts from [1, 500k) to [500k, 1M), lopsided semiprimes gain share
 
 ---
 
-## Install and test
+## Develop and test
 
 ```bash
 git clone https://github.com/onojk/primehelix.git
 cd primehelix
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .           # core: classify, factor, scan, compare
-pip install -e ".[plot]"   # add matplotlib for --plot
-pip install -e ".[dev]"    # everything including tests
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
