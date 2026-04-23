@@ -233,8 +233,18 @@ class TestCompareRangesContract:
     def test_flags_exist(self):
         r = cli("compare-ranges", "--help")
         for flag in ("--a-start", "--a-stop", "--b-start", "--b-stop",
-                     "--top-delta", "--json", "--only-classification"):
+                     "--top-delta", "--json", "--only-classification", "--plot"):
             assert flag in r.stdout, f"missing flag {flag}"
+
+    def test_plot_flag_accepted(self, tmp_path):
+        out = tmp_path / "overlay.png"
+        r = cli("compare-ranges",
+                "--a-start", "1", "--a-stop", "200",
+                "--b-start", "200", "--b-stop", "400",
+                "--plot", str(out))
+        assert r.returncode == 0
+        assert out.exists()
+        assert out.stat().st_size > 0
 
     def test_json_required_keys(self):
         d = cli_json("compare-ranges",

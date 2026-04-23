@@ -313,12 +313,14 @@ def structure_scan(start, stop, as_json, profile, only_classification, only_stru
               help="Write comparison rows to CSV at this path")
 @click.option("--export-json", "export_json_path", default=None, type=str,
               help="Write full JSON result to this file")
+@click.option("--plot", "plot_path", default=None, type=str,
+              help="Save overlay bar chart to this path (PNG)")
 @click.option("--fast", "fast_mode", is_flag=True,
               help="Skip geometry — return classification-only labels (faster for large ranges)")
 def compare_ranges(
     a_start, a_stop, b_start, b_stop,
     top_delta, as_json, only_classification, only_structure,
-    export_csv, export_json_path, fast_mode,
+    export_csv, export_json_path, plot_path, fast_mode,
 ):
     span_a = a_stop - a_start
     span_b = b_stop - b_start
@@ -369,6 +371,30 @@ def compare_ranges(
         _write_json(export_json_path, payload)
         if not as_json:
             console.print(f"[green]JSON written to {export_json_path}[/green]")
+
+    if plot_path:
+        try:
+            from .display.plots import save_compare_overlay_plot
+        except ImportError as e:
+            raise click.UsageError(str(e))
+        plot_rows = sorted(rows, key=lambda r: -abs(r.delta))[:top_delta or 16]
+        label_a_str = f"[{a_start}, {a_stop})"
+        label_b_str = f"[{b_start}, {b_stop})"
+        title = f"Structure comparison: {label_a_str} vs {label_b_str}"
+        if only_classification:
+            title += f" | {only_classification}"
+        save_compare_overlay_plot(
+            labels=[r.structure for r in plot_rows],
+            percents_a=[r.a_percent for r in plot_rows],
+            percents_b=[r.b_percent for r in plot_rows],
+            deltas=[r.delta for r in plot_rows],
+            label_a=label_a_str,
+            label_b=label_b_str,
+            output_path=plot_path,
+            title=title,
+        )
+        if not as_json:
+            console.print(f"[green]Plot written to {plot_path}[/green]")
 
     if as_json:
         print_json(payload)

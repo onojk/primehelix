@@ -167,6 +167,66 @@ def save_compare_plot(
     plt.close(fig)
 
 
+def save_compare_overlay_plot(
+    labels: list[str],
+    percents_a: list[float],
+    percents_b: list[float],
+    deltas: list[float],
+    label_a: str,
+    label_b: str,
+    output_path: str,
+    title: str = "Range Comparison",
+):
+    """Grouped horizontal bar chart of percent share with delta annotations.
+
+    Rows should be pre-sorted (e.g. by abs(delta)) before calling.
+    """
+    plt = _require_matplotlib()
+    if not labels:
+        raise ValueError("No rows to plot.")
+
+    n = len(labels)
+    fig_height = max(4, min(16, 0.7 * n + 1.5))
+    fig_width = 14
+
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+
+    y = list(range(n))
+    bar_h = 0.38
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    color_a = colors[0]
+    color_b = colors[1]
+
+    ax.barh([yy - bar_h / 2 for yy in y], percents_a, height=bar_h,
+            label=label_a, color=color_a, alpha=0.85)
+    ax.barh([yy + bar_h / 2 for yy in y], percents_b, height=bar_h,
+            label=label_b, color=color_b, alpha=0.85)
+
+    max_pct = max(percents_a + percents_b) if (percents_a or percents_b) else 1
+    pad = max_pct * 0.015
+
+    for i, (pa, pb, delta) in enumerate(zip(percents_a, percents_b, deltas)):
+        sign = "+" if delta >= 0 else ""
+        annotation = f"{sign}{delta:.2f}pp"
+        color = "#2a9d2a" if delta > 0 else "#cc3333" if delta < 0 else "#888888"
+        x_pos = max(pa, pb) + pad * 4
+        ax.text(x_pos, y[i], annotation, va="center", fontsize=8,
+                color=color, fontweight="bold")
+
+    ax.set_title(title, pad=10)
+    ax.set_xlabel("Percent share (%)")
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=8)
+    ax.invert_yaxis()
+    ax.legend(loc="lower right")
+    ax.set_xlim(0, max_pct * 1.35 if max_pct > 0 else 1)
+    ax.grid(True, axis="x", alpha=0.3)
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+
+
 def save_structure_time_series_plot(
     series_map: dict[str, list[float]],
     window_labels: list[str],
