@@ -102,6 +102,7 @@ def _summarize_filtered_range(
     from .geometry.residue import residue_profile
 
     counts = Counter()
+    method_counts: Counter = Counter()
     total = 0
     span = stop - start
     t0 = time.monotonic()
@@ -124,6 +125,7 @@ def _summarize_filtered_range(
             pass
         else:
             counts[label] += 1
+            method_counts[result.method or "trial"] += 1
             total += 1
 
         if progress and span > 0 and (i + 1) % _REPORT_EVERY == 0:
@@ -143,6 +145,7 @@ def _summarize_filtered_range(
     return {
         "total": total,
         "counts": counts,
+        "methods": method_counts,
     }
 
 
@@ -331,9 +334,10 @@ def factor(n, verbose, budget, as_json):
 @click.option("--start", required=True, type=int)
 @click.option("--stop", required=True, type=int)
 @click.option("--json", "as_json", is_flag=True)
+@click.option("--profile", is_flag=True, help="Include factorization method distribution")
 @click.option("--only-classification", type=str)
 @click.option("--only-structure", type=str)
-def structure_scan(start, stop, as_json, only_classification, only_structure):
+def structure_scan(start, stop, as_json, profile, only_classification, only_structure):
     span = stop - start
     summary = _summarize_filtered_range(
         start,
@@ -354,6 +358,8 @@ def structure_scan(start, stop, as_json, only_classification, only_structure):
             "entropy": label_entropy(summary["counts"], summary["total"]),
             "counts": dict(summary["counts"]),
         }
+        if profile:
+            payload["methods"] = dict(summary["methods"])
         if only_classification:
             payload["only_classification"] = only_classification
         if only_structure:
@@ -362,6 +368,17 @@ def structure_scan(start, stop, as_json, only_classification, only_structure):
         return
 
     _print_structure_summary(summary)
+
+    if profile and summary["methods"]:
+        methods = summary["methods"]
+        mtotal = sum(methods.values())
+        table = Table(title="factorization method profile")
+        table.add_column("method")
+        table.add_column("count", justify="right")
+        table.add_column("percent", justify="right")
+        for m, c in methods.most_common():
+            table.add_row(m, str(c), f"{c/mtotal*100:.2f}%")
+        console.print(table)
 
 
 # -----------------------------

@@ -5,15 +5,35 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "primehelix"
 version = "0.2.0"
-description = "Unified console toolkit for prime number theory, factorization, and geometric number exploration"
+description = "Structural analysis for integers — classify, scan, compare, and track number structure using a shared label language"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
+authors = [
+    { name = "Jonathan Kendall", email = "onojk123@gmail.com" },
+]
+keywords = ["prime", "factorization", "number-theory", "structure", "semiprime", "residue"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
 dependencies = [
     "gmpy2>=2.1",
     "click>=8.1",
     "rich>=13.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/onojk/primehelix"
+Repository = "https://github.com/onojk/primehelix"
+"Bug Tracker" = "https://github.com/onojk/primehelix/issues"
 
 [project.optional-dependencies]
 plot = ["matplotlib>=3.5"]

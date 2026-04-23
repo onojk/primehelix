@@ -167,6 +167,17 @@ class TestStructureScanContract:
         for label in d["counts"]:
             assert label.startswith("prime"), f"non-prime label: {label}"
 
+    def test_profile_flag_adds_methods(self):
+        d = cli_json("structure-scan", "--start", "1", "--stop", "200",
+                     "--profile", "--json")
+        assert "methods" in d
+        assert isinstance(d["methods"], dict)
+        assert sum(d["methods"].values()) > 0
+
+    def test_without_profile_no_methods(self):
+        d = cli_json("structure-scan", "--start", "1", "--stop", "200", "--json")
+        assert "methods" not in d
+
 
 # ---------------------------------------------------------------------------
 # compare-ranges
