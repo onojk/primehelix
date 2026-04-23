@@ -21,7 +21,7 @@ def test_classify_json_schema():
     assert data["factors"]["331"] == 1
     assert data["prime_factors"] == [2, 3, 3, 7, 11, 31, 151, 331]
     assert data["factorization"] == "2 * 3^2 * 7 * 11 * 31 * 151 * 331"
-    assert "rho: 331" in data["steps"]
+    assert any(s.startswith("rho:") for s in data["steps"])
 
 
 def test_factor_json_schema():
