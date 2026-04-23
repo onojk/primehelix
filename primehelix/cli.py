@@ -8,13 +8,14 @@ import sys
 
 import click
 from rich.console import Console
+from rich.table import Table
 from primehelix.display.json_output import build_json_result, print_json
 
 console = Console()
 
 
 @click.group()
-@click.version_option("0.1.0", prog_name="primehelix")
+@click.version_option("0.1.1", prog_name="primehelix")
 def main():
     """
     primehelix: prime theory, factorization, and geometric number exploration.
@@ -28,19 +29,43 @@ def main():
       scan       Wheel-accelerated range scanner to CSV
       ecm        Lenstra ECM — elliptic curve factoring
       qs         Quadratic Sieve factoring
+
+    \b
+    Output modes:
+      default    Rich human-readable console output
+      --json     Machine-readable JSON for scripting and automation
     """
+
+
+def _print_residue_profile(residue: dict):
+    table = Table(title="residue profile")
+    table.add_column("field")
+    table.add_column("value")
+
+    for key, value in residue.items():
+        table.add_row(str(key), str(value))
+
+    console.print(table)
 
 
 @main.command()
 @click.argument("n", type=str)
 @click.option("--coil", is_flag=True, help="Show conical helix footprint (semiprimes only)")
 @click.option("--tangent", is_flag=True, help="Show tangent-split diagnostics")
+@click.option("--residue", "show_residue", is_flag=True, help="Show arithmetic residue-family profile")
 @click.option("--budget", default=10000, show_default=True, help="Time budget in ms")
-@click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
-def classify(n: str, coil: bool, tangent: bool, budget: int, as_json: bool):
-    """Classify N as prime, semiprime, or composite."""
+@click.option("--json", "as_json", is_flag=True, help="Output machine-readable JSON")
+def classify(n: str, coil: bool, tangent: bool, show_residue: bool, budget: int, as_json: bool):
+    """
+    Classify N as prime, semiprime, or composite.
+
+    Use --json for machine-readable output.
+    Use --coil with semiprimes to include geometric structure.
+    Use --residue to include arithmetic family profiling.
+    """
     from .core.factor import classify as do_classify
     from .display.output import print_classify, print_coil, print_tangent
+    from .geometry.residue import residue_profile
 
     try:
         N = int(n.strip().replace(",", "").replace("_", ""))
@@ -53,6 +78,8 @@ def classify(n: str, coil: bool, tangent: bool, budget: int, as_json: bool):
         sys.exit(1)
 
     classification, result = do_classify(N, budget_ms=budget)
+
+    residue = residue_profile(N, result.factors, classification=classification)
 
     if as_json:
         coil_data = None
@@ -71,11 +98,15 @@ def classify(n: str, coil: bool, tangent: bool, budget: int, as_json: bool):
             command="classify",
             classification=classification,
             coil=coil_data,
+            residue=residue,
         )
         print_json(payload)
         return
 
     print_classify(N, classification, result)
+
+    if show_residue:
+        _print_residue_profile(residue)
 
     if coil and classification.lower() == "semiprime":
         from .geometry.coil import coil_footprint
@@ -105,12 +136,21 @@ def classify(n: str, coil: bool, tangent: bool, budget: int, as_json: bool):
 @main.command()
 @click.argument("n", type=str)
 @click.option("--budget", default=10000, show_default=True, help="Time budget in ms")
-@click.option("--method", type=click.Choice(["auto", "trial", "rho", "pm1", "ecm", "qs"]),
-              default="auto", show_default=True)
+@click.option(
+    "--method",
+    type=click.Choice(["auto", "trial", "rho", "pm1", "ecm", "qs"]),
+    default="auto",
+    show_default=True,
+)
 @click.option("--verbose", is_flag=True, help="Show pipeline steps")
-@click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
+@click.option("--json", "as_json", is_flag=True, help="Output machine-readable JSON")
 def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
-    """Factor N using the full pipeline or a specific method."""
+    """
+    Factor N using the full pipeline or a specific method.
+
+    Use --verbose to show pipeline steps.
+    Use --json for machine-readable output.
+    """
     from .display.output import print_factor
 
     try:
@@ -128,6 +168,7 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
     elif method == "trial":
         from .core.primes import _SMALL_PRIMES
         from .core.factor import FactorResult
+
         factors = {}
         tmp = N
         for p in _SMALL_PRIMES:
@@ -136,6 +177,7 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
                 tmp //= p
         if tmp > 1:
             factors[tmp] = factors.get(tmp, 0) + 1
+
         result = FactorResult(
             n=N,
             factors=factors,
@@ -147,6 +189,7 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
     elif method == "rho":
         from .core.rho import pollard_rho
         from .core.factor import FactorResult
+
         f = pollard_rho(N, timeout_ms=budget)
         if f:
             result = FactorResult(
@@ -168,6 +211,7 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
     elif method == "pm1":
         from .core.pm1 import pollard_pm1
         from .core.factor import FactorResult
+
         f = pollard_pm1(N)
         if f:
             result = FactorResult(
@@ -189,6 +233,7 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
     elif method == "ecm":
         from .core.ecm import ecm as do_ecm
         from .core.factor import FactorResult
+
         f = do_ecm(N, timeout_ms=budget)
         if f:
             result = FactorResult(
@@ -210,6 +255,7 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
     elif method == "qs":
         from .core.qs import quadratic_sieve
         from .core.factor import FactorResult
+
         f = quadratic_sieve(N)
         if f:
             result = FactorResult(
@@ -239,11 +285,20 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
 @main.command()
 @click.argument("n", type=str)
 @click.option("--signature", is_flag=True, help="Show SHA-256 signatures")
+@click.option("--ascii", "ascii_mode", is_flag=True, help="Show ASCII helix visualization")
 @click.option("--r0", default=1.0, show_default=True)
 @click.option("--alpha", default=0.0125, show_default=True)
 @click.option("--beta", default=0.005, show_default=True)
 @click.option("--L", default=360.0, show_default=True)
-def coil(n: str, signature: bool, r0: float, alpha: float, beta: float, l: float):
+def coil(
+    n: str,
+    signature: bool,
+    ascii_mode: bool,
+    r0: float,
+    alpha: float,
+    beta: float,
+    l: float,
+):
     """Show conical helix footprint for N (must be semiprime or provide factors)."""
     from .core.factor import classify as do_classify
     from .geometry.coil import coil_footprint
@@ -272,6 +327,12 @@ def coil(n: str, signature: bool, r0: float, alpha: float, beta: float, l: float
 
     p, q = primes_flat[0], primes_flat[-1]
     fp = coil_footprint(N, p, q, r0=r0, alpha=alpha, beta=beta, L=l)
+
+    if ascii_mode:
+        from .display.ascii_helix import print_ascii_helix
+        print_ascii_helix(fp)
+        return
+
     print_coil(fp, show_signature=signature)
 
 
@@ -310,8 +371,7 @@ def scan(start: int, stop: int, out: str, mode: str, no_resume: bool, budget: in
     from .scan.wheel import scan as do_scan
 
     count = 0
-    for row in do_scan(start, stop, out,
-                       mode=mode, resume=not no_resume, budget_ms=budget):
+    for row in do_scan(start, stop, out, mode=mode, resume=not no_resume, budget_ms=budget):
         count += 1
         if count % 10000 == 0:
             console.print(f"[dim]  scanned {count:,} numbers, last n={row['n']:,}[/dim]")
@@ -343,8 +403,7 @@ def ecm(n: str, b1: int, curves: int, budget: int):
 
 @main.command()
 @click.argument("n", type=str)
-@click.option("--B-scale", default=5.0, show_default=True, type=float,
-              help="Factor-base size multiplier")
+@click.option("--B-scale", default=5.0, show_default=True, type=float, help="Factor-base size multiplier")
 def qs(n: str, b_scale: float):
     """Quadratic Sieve — for hard semiprimes with no small factors."""
     from .core.qs import quadratic_sieve

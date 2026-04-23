@@ -1,5 +1,4 @@
 import json
-import math
 
 
 def _factor_dict(result):
@@ -27,7 +26,7 @@ def _factorization_string(result, ascii_only=True):
 def _coil_insight(coil):
     """
     Plain-English interpretation of coil geometry for JSON output.
-    Uses bit_gap and balance heuristics only, so it stays stable and simple.
+    Uses bit_gap and balance heuristics only.
     """
     if coil is None:
         return None
@@ -38,7 +37,6 @@ def _coil_insight(coil):
     if bit_gap is None or balance is None:
         return None
 
-    # Keep this simple and stable.
     if bit_gap <= 1 and balance < 0.15:
         return "nearly equal factors; structure is strongly balanced"
     if bit_gap <= 3 and balance < 1.0:
@@ -68,7 +66,13 @@ def _serialize_coil(coil):
     return data
 
 
-def build_json_result(result, command: str, classification: str | None = None, coil=None):
+def build_json_result(
+    result,
+    command: str,
+    classification: str | None = None,
+    coil=None,
+    residue=None,
+):
     payload = {
         "command": command,
         "n": result.n,
@@ -85,6 +89,9 @@ def build_json_result(result, command: str, classification: str | None = None, c
     coil_data = _serialize_coil(coil)
     if coil_data is not None:
         payload["coil"] = coil_data
+
+    if residue is not None:
+        payload["residue"] = residue
 
     return payload
 
