@@ -22,6 +22,7 @@ def test_classify_json_schema():
     assert data["prime_factors"] == [2, 3, 3, 7, 11, 31, 151, 331]
     assert data["factorization"] == "2 * 3^2 * 7 * 11 * 31 * 151 * 331"
     assert any(s.startswith("rho:") for s in data["steps"])
+    assert data["structure"] == "composite"
 
 
 def test_factor_json_schema():
@@ -37,6 +38,7 @@ def test_factor_json_schema():
     assert data["factors"]["331"] == 1
     assert data["factorization"] == "2 * 3^2 * 7 * 11 * 31 * 151 * 331"
     assert "trial: 31" in data["steps"]
+    assert "structure" not in data or data["structure"] is None
 
 
 def test_classify_coil_json_contains_insight():
@@ -51,3 +53,4 @@ def test_classify_coil_json_contains_insight():
     assert "insight" in data["coil"]
     assert isinstance(data["coil"]["insight"], str)
     assert len(data["coil"]["insight"]) > 0
+    assert data["structure"] == "semiprime | lopsided | mod4_1x3"

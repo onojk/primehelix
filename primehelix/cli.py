@@ -1,5 +1,4 @@
 from __future__ import annotations
-import sys
 import csv
 
 import click
@@ -24,6 +23,7 @@ Examples:
   primehelix classify 1300039 --coil --json
   primehelix structure-scan --start 10 --stop 100 --json
   primehelix compare-ranges --a-start 10 --a-stop 20 --b-start 20 --b-stop 30 --top-delta 5
+  primehelix structure-time-series --start 1 --stop 100000 --window 10000 --step 10000 --only-classification semiprime --plot ts.png
 """)
 @click.version_option("0.1.2", prog_name="primehelix")
 def main():
@@ -390,6 +390,144 @@ def compare_ranges(
         label_b=f"[{b_start}, {b_stop})",
         top_delta=top_delta,
     )
+
+
+# -----------------------------
+# structure-time-series
+# -----------------------------
+
+@main.command("structure-time-series")
+@click.option("--start", required=True, type=int)
+@click.option("--stop", required=True, type=int)
+@click.option("--window", default=10000, show_default=True, type=int)
+@click.option("--step", default=10000, show_default=True, type=int)
+@click.option("--metric", type=click.Choice(["percent", "count"]), default="percent", show_default=True)
+@click.option("--top", default=5, show_default=True, type=int, help="Number of structure series to plot")
+@click.option("--plot", "plot_path", required=True, type=str)
+@click.option("--json", "as_json", is_flag=True)
+@click.option("--only-classification", type=str)
+@click.option("--only-structure", type=str)
+def structure_time_series(
+    start,
+    stop,
+    window,
+    step,
+    metric,
+    top,
+    plot_path,
+    as_json,
+    only_classification,
+    only_structure,
+):
+    from .display.plots import save_structure_time_series_plot
+
+    if stop <= start:
+        raise click.UsageError("stop must be greater than start")
+    if window <= 0:
+        raise click.UsageError("window must be positive")
+    if step <= 0:
+        raise click.UsageError("step must be positive")
+
+    windows = []
+    cursor = start
+    while cursor < stop:
+        win_start = cursor
+        win_stop = min(cursor + window, stop)
+        if win_stop <= win_start:
+            break
+
+        summary = _summarize_filtered_range(
+            win_start,
+            win_stop,
+            budget=2000,
+            only_classification=only_classification,
+            only_structure=only_structure,
+        )
+        windows.append(
+            {
+                "start": win_start,
+                "stop": win_stop,
+                "label": f"[{win_start},{win_stop})",
+                "summary": summary,
+            }
+        )
+        cursor += step
+
+    if not windows:
+        raise click.UsageError("no windows generated")
+
+    aggregate_scores: dict[str, float] = {}
+    for win in windows:
+        counts = win["summary"]["counts"]
+        total = win["summary"]["total"]
+
+        for label, count in counts.items():
+            value = (count / total * 100.0) if (metric == "percent" and total) else float(count)
+            aggregate_scores[label] = aggregate_scores.get(label, 0.0) + value
+
+    top_labels = [
+        label for label, _ in sorted(
+            aggregate_scores.items(),
+            key=lambda kv: (-kv[1], kv[0].lower())
+        )[:top]
+    ]
+
+    series_map: dict[str, list[float]] = {label: [] for label in top_labels}
+    window_labels: list[str] = []
+
+    for win in windows:
+        counts = win["summary"]["counts"]
+        total = win["summary"]["total"]
+        window_labels.append(win["label"])
+
+        for label in top_labels:
+            count = counts.get(label, 0)
+            value = (count / total * 100.0) if (metric == "percent" and total) else float(count)
+            series_map[label].append(value)
+
+    title = f"Structure Time Series [{start}, {stop})"
+    ylabel = "Percent" if metric == "percent" else "Count"
+    if only_classification:
+        title += f" | class={only_classification}"
+    if only_structure:
+        title += f" | structure~{only_structure}"
+
+    save_structure_time_series_plot(
+        series_map=series_map,
+        window_labels=window_labels,
+        output_path=plot_path,
+        title=title,
+        ylabel=ylabel,
+    )
+    console.print(f"[green]Plot written to {plot_path}[/green]")
+
+    if as_json:
+        payload = {
+            "command": "structure-time-series",
+            "start": start,
+            "stop": stop,
+            "window": window,
+            "step": step,
+            "metric": metric,
+            "top": top,
+            "plot": plot_path,
+            "labels": top_labels,
+            "windows": [
+                {
+                    "start": win["start"],
+                    "stop": win["stop"],
+                    "label": win["label"],
+                    "total": win["summary"]["total"],
+                }
+                for win in windows
+            ],
+            "series": series_map,
+        }
+        if only_classification:
+            payload["only_classification"] = only_classification
+        if only_structure:
+            payload["only_structure"] = only_structure
+        print_json(payload)
 
 
 if __name__ == "__main__":

@@ -53,16 +53,24 @@ def residue_profile(n: int, factors: dict[int, int] | None = None, classificatio
         data["prime_family"] = _prime_family_mod4(flat[0])
 
     if classification and classification.lower() == "semiprime" and len(flat) == 2:
-        a = flat[0] % 4
-        b = flat[1] % 4
-        pair = f"{min(a, b)}x{max(a, b)}"
-        data["semiprime_mod4_pair"] = pair
+        a, b = flat
 
-        if pair == "1x1":
-            data["semiprime_mod4_note"] = "both factors are 1 mod 4"
-        elif pair == "1x3":
-            data["semiprime_mod4_note"] = "mixed 1 mod 4 and 3 mod 4 factor families"
-        elif pair == "3x3":
-            data["semiprime_mod4_note"] = "both factors are 3 mod 4"
+        # Handle factor 2 explicitly
+        if a == 2 or b == 2:
+            other = b if a == 2 else a
+            data["semiprime_mod4_pair"] = f"2x{other % 4}"
+            data["semiprime_mod4_note"] = "includes factor 2; mod4 structure is degenerate"
+        else:
+            ra = a % 4
+            rb = b % 4
+            pair = f"{min(ra, rb)}x{max(ra, rb)}"
+            data["semiprime_mod4_pair"] = pair
+
+            if pair == "1x1":
+                data["semiprime_mod4_note"] = "both factors are 1 mod 4"
+            elif pair == "1x3":
+                data["semiprime_mod4_note"] = "mixed 1 mod 4 and 3 mod 4 factor families"
+            elif pair == "3x3":
+                data["semiprime_mod4_note"] = "both factors are 3 mod 4"
 
     return data

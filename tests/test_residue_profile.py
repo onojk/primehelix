@@ -31,3 +31,13 @@ def test_classify_json_contains_residue():
     assert "residue" in data
     assert data["residue"]["n_mod_4"] == 3
     assert data["residue"]["semiprime_mod4_pair"] == "1x3"
+    assert data["structure"] == "semiprime | lopsided | mod4_1x3"
+
+
+def test_prime_json_structure_summary():
+    out = run_cli("classify", "13", "--json")
+    data = json.loads(out)
+
+    assert data["classification"] == "prime"
+    assert "prime" in data["structure"]
+    assert "pythagorean" in data["structure"]
