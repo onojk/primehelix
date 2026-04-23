@@ -26,6 +26,7 @@ build/
 # Media / generated outputs
 media/
 *.png
+!docs/*.png
 
 # Logs
 *.log

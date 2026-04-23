@@ -13,6 +13,8 @@ Every integer receives a compact **structure label** encoding classification, ge
 
 ## Findings
 
+![Semiprime structure distribution — [1, 10M)](docs/semiprime_1e7_structure.png)
+
 All measurements below come from scanning [1, 1 000 000). Every command shown is fully reproducible.
 
 **At 1M scale:** ~73% of semiprimes are lopsided. At 10M that rises to ~79%. Balanced (RSA-like) semiprimes fall below 0.7%. The even-involved share nearly doubles under the lopsided constraint. This distribution strengthens — not randomizes — as the range grows.
