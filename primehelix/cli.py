@@ -8,6 +8,7 @@ import sys
 
 import click
 from rich.console import Console
+from primehelix.display.json_output import build_json_result, print_json
 
 console = Console()
 
@@ -54,20 +55,29 @@ def classify(n: str, coil: bool, tangent: bool, budget: int, as_json: bool):
     classification, result = do_classify(N, budget_ms=budget)
 
     if as_json:
-        import json
-        click.echo(json.dumps({
-            "n": N,
-            "classification": classification,
-            "factors": {str(p): e for p, e in sorted(result.factors.items())},
-            "method": result.method,
-            "elapsed_ms": round(result.elapsed_ms, 3),
-            "complete": result.complete,
-        }))
+        coil_data = None
+
+        if coil and classification.lower() == "semiprime":
+            from .geometry.coil import coil_footprint
+            primes = sorted(result.factors.keys())
+            if len(primes) == 2:
+                coil_data = coil_footprint(N, primes[0], primes[1])
+            elif len(primes) == 1:
+                p = primes[0]
+                coil_data = coil_footprint(N, p, p)
+
+        payload = build_json_result(
+            result,
+            command="classify",
+            classification=classification,
+            coil=coil_data,
+        )
+        print_json(payload)
         return
 
     print_classify(N, classification, result)
 
-    if coil and classification == "semiprime":
+    if coil and classification.lower() == "semiprime":
         from .geometry.coil import coil_footprint
         primes = sorted(result.factors.keys())
         if len(primes) == 2:
@@ -83,8 +93,7 @@ def classify(n: str, coil: bool, tangent: bool, budget: int, as_json: bool):
         eq = equal_split(N)
         ts = tangent_split(N)
         ideal = None
-        if classification == "semiprime":
-            primes = sorted(result.factors.keys())
+        if classification.lower() == "semiprime":
             flat = []
             for p, e in result.factors.items():
                 flat.extend([p] * e)
@@ -117,7 +126,7 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
         result = do_factor(N, budget_ms=budget)
 
     elif method == "trial":
-        from .core.primes import is_prime, _SMALL_PRIMES
+        from .core.primes import _SMALL_PRIMES
         from .core.factor import FactorResult
         factors = {}
         tmp = N
@@ -126,64 +135,102 @@ def factor(n: str, budget: int, method: str, verbose: bool, as_json: bool):
                 factors[p] = factors.get(p, 0) + 1
                 tmp //= p
         if tmp > 1:
-            factors[tmp] = 1
-        result = FactorResult(n=N, factors=factors, method="trial",
-                              elapsed_ms=(time.monotonic()-t0)*1000, complete=True)
+            factors[tmp] = factors.get(tmp, 0) + 1
+        result = FactorResult(
+            n=N,
+            factors=factors,
+            method="trial",
+            elapsed_ms=(time.monotonic() - t0) * 1000,
+            complete=True,
+        )
 
     elif method == "rho":
         from .core.rho import pollard_rho
         from .core.factor import FactorResult
         f = pollard_rho(N, timeout_ms=budget)
         if f:
-            result = FactorResult(n=N, factors={f: 1, N//f: 1}, method="rho",
-                                  elapsed_ms=(time.monotonic()-t0)*1000, complete=True)
+            result = FactorResult(
+                n=N,
+                factors={f: 1, N // f: 1},
+                method="rho",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                complete=True,
+            )
         else:
-            result = FactorResult(n=N, factors={N: 1}, method="rho",
-                                  elapsed_ms=(time.monotonic()-t0)*1000, complete=False)
+            result = FactorResult(
+                n=N,
+                factors={N: 1},
+                method="rho",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                complete=False,
+            )
 
     elif method == "pm1":
         from .core.pm1 import pollard_pm1
         from .core.factor import FactorResult
         f = pollard_pm1(N)
         if f:
-            result = FactorResult(n=N, factors={f: 1, N//f: 1}, method="p-1",
-                                  elapsed_ms=(time.monotonic()-t0)*1000, complete=True)
+            result = FactorResult(
+                n=N,
+                factors={f: 1, N // f: 1},
+                method="p-1",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                complete=True,
+            )
         else:
-            result = FactorResult(n=N, factors={N: 1}, method="p-1",
-                                  elapsed_ms=(time.monotonic()-t0)*1000, complete=False)
+            result = FactorResult(
+                n=N,
+                factors={N: 1},
+                method="p-1",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                complete=False,
+            )
 
     elif method == "ecm":
         from .core.ecm import ecm as do_ecm
         from .core.factor import FactorResult
         f = do_ecm(N, timeout_ms=budget)
         if f:
-            result = FactorResult(n=N, factors={f: 1, N//f: 1}, method="ecm",
-                                  elapsed_ms=(time.monotonic()-t0)*1000, complete=True)
+            result = FactorResult(
+                n=N,
+                factors={f: 1, N // f: 1},
+                method="ecm",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                complete=True,
+            )
         else:
-            result = FactorResult(n=N, factors={N: 1}, method="ecm",
-                                  elapsed_ms=(time.monotonic()-t0)*1000, complete=False)
+            result = FactorResult(
+                n=N,
+                factors={N: 1},
+                method="ecm",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                complete=False,
+            )
 
     elif method == "qs":
         from .core.qs import quadratic_sieve
         from .core.factor import FactorResult
         f = quadratic_sieve(N)
         if f:
-            result = FactorResult(n=N, factors={f: 1, N//f: 1}, method="qs",
-                                  elapsed_ms=(time.monotonic()-t0)*1000, complete=True)
+            result = FactorResult(
+                n=N,
+                factors={f: 1, N // f: 1},
+                method="qs",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                complete=True,
+            )
         else:
-            result = FactorResult(n=N, factors={N: 1}, method="qs",
-                                  elapsed_ms=(time.monotonic()-t0)*1000, complete=False)
+            result = FactorResult(
+                n=N,
+                factors={N: 1},
+                method="qs",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                complete=False,
+            )
 
     if as_json:
-        import json
-        click.echo(json.dumps({
-            "n": result.n,
-            "factors": {str(p): e for p, e in sorted(result.factors.items())},
-            "method": result.method,
-            "elapsed_ms": round(result.elapsed_ms, 3),
-            "complete": result.complete,
-            "steps": result.steps if verbose else [],
-        }))
+        payload = build_json_result(result, command="factor")
+        print_json(payload)
         return
 
     print_factor(result, verbose=verbose)
@@ -210,7 +257,7 @@ def coil(n: str, signature: bool, r0: float, alpha: float, beta: float, l: float
 
     classification, result = do_classify(N)
 
-    if classification == "prime":
+    if classification.lower() == "prime":
         console.print(f"[green]{N} is prime[/green] — no coil footprint (requires semiprime).")
         return
 
