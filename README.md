@@ -65,6 +65,21 @@ primehelix compare-ranges --a-start 1 --a-stop 500000 --b-start 500000 --b-stop 
 
 ---
 
+## Datasets
+
+Pre-computed results are in [`datasets/`](datasets/):
+
+| File | Range | Count |
+|------|-------|------:|
+| [`semiprime_1e6_labels.csv`](datasets/semiprime_1e6_labels.csv) | [1, 1M) | 210,035 semiprimes, 16 labels |
+| [`semiprime_1e7_labels.csv`](datasets/semiprime_1e7_labels.csv) | [1, 10M) | 1,904,324 semiprimes, 16 labels |
+| [`compare_semiprime_1e6_halves.csv`](datasets/compare_semiprime_1e6_halves.csv) | [1,500k) vs [500k,1M) | per-label deltas |
+| [`compare_semiprime_1e7_halves.csv`](datasets/compare_semiprime_1e7_halves.csv) | [1,5M) vs [5M,10M) | per-label deltas |
+
+Each file includes exact CLI commands to reproduce it. See [`datasets/README.md`](datasets/README.md).
+
+---
+
 ## Install
 
 ```bash
