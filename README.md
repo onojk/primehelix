@@ -1,8 +1,8 @@
 # primehelix
 
-**A unified console toolkit for prime number theory, integer factorization, and geometric number exploration.**
+**Integer factorization and prime classification CLI — with a geometric lens on number structure.**
 
-`primehelix` consolidates five research projects into one coherent program — combining fast factoring algorithms, cryptographic primality testing, a geometric/conical-helix model of number structure, bit-bucket analysis, and a wheel-accelerated range scanner.
+Most factoring tools tell you *what* the factors are. primehelix also tells you *where* a number sits on a conical helix, how balanced its factor pair is, and what the structure looks like across bit-length buckets. The math is the same; the interpretation is different.
 
 ---
 
@@ -35,19 +35,23 @@ $ primehelix factor 2147483646 --verbose
 ╰────────────────────────────────────────────────────────────────────╯
 Pipeline steps:
   · trial: 2
-  · trial: 3
-  · trial: 3
-  · trial: 7
-  · trial: 11
-  · trial: 31
+  · trial: 3  · trial: 3
+  · trial: 7  · trial: 11  · trial: 31
   · rho: 151
 ```
 
 ```
-$ primehelix classify 65537
+$ primehelix classify 110000479000513 --coil
 
-  classification  │ PRIME
-  method          │ bpsw
+  classification  │ SEMIPRIME
+  factorization   │ 10007 × 10993007
+
+  ── coil footprint ──────────────────────────
+  d(n → q)        │ 0.499983
+  d(q → p)        │ 0.000023
+  d(p → 1)        │ 0.499994
+  balance |p-q|/√n│ 0.031109
+  type            │ lopsided semiprime
 ```
 
 ```
