@@ -280,47 +280,65 @@ Breaking changes to this schema will be documented in release notes and accompan
 
 ## Empirical findings
 
-The following measurements come from running primehelix against the integers [1, 100 000).
+All measurements below were produced by running primehelix against [1, 1 000 000). The commands are fully reproducible.
 
-### Structure distribution baseline
+### Overall structure distribution
 
+```bash
+primehelix structure-scan --start 1 --stop 1000000 --json
 ```
-primehelix structure-scan --start 1 --stop 100000 --json
-```
 
-| Structure | Count | Share |
-|-----------|------:|------:|
-| composite | 67 028 | 67.03% |
-| semiprime \| lopsided \| mod4_1x3 | 5 060 | 5.06% |
-| prime \| gaussian | 4 808 | 4.81% |
-| prime \| pythagorean | 4 783 | 4.78% |
-| semiprime \| moderate \| mod4_1x3 | 3 914 | 3.91% |
-| semiprime \| lopsided \| mod4_3x3 | 3 349 | 3.35% |
-| semiprime \| lopsided \| mod4_2x3 | 2 559 | 2.56% |
-| semiprime \| lopsided \| mod4_2x1 | 2 528 | 2.53% |
-| semiprime \| moderate \| mod4_3x3 | 2 112 | 2.11% |
-| semiprime \| moderate \| mod4_1x1 | 1 798 | 1.80% |
-| semiprime \| balanced (all pairs) | 217 | 0.22% |
+| Classification | Count | Share |
+|----------------|------:|------:|
+| composite | 711,465 | 71.15% |
+| semiprime | 210,035 | 21.00% |
+| prime | 78,498 | 7.85% |
+| invalid (n ≤ 1) | 1 | — |
 
-**Notes:** Primes split nearly evenly between the two residue families (gaussian ≈ pythagorean), consistent with Dirichlet's theorem. Among semiprimes, lopsided pairs (larger factor at least 8 bits wider) are more frequent than moderate pairs by roughly 2.5×. Balanced semiprimes — pairs where both factors have nearly equal bit-length — are rare: under 0.25% of all integers in this range.
+Primes split almost exactly evenly between the two residue families — 50.09% gaussian (p ≡ 3 mod 4) and 49.91% pythagorean (p ≡ 1 mod 4) — consistent with Dirichlet's theorem on primes in arithmetic progressions.
+
+### Semiprime balance distribution
+
+Among the 210,035 semiprimes in [1, 1M):
+
+| Balance tier | Count | Share |
+|--------------|------:|------:|
+| lopsided (bit_gap > 8 or balance ≥ 10) | 153,718 | **73.2%** |
+| moderate | 54,427 | 25.9% |
+| balanced (bit_gap ≤ 1 and balance < 0.15) | 1,677 | 0.80% |
+
+Lopsided pairs dominate by a wide margin. Balanced semiprimes — the RSA-like products of two primes of nearly equal bit-length — are extremely rare below 1M: under 1 in 125.
+
+### Mod4 pair distribution: all semiprimes vs lopsided-only
+
+| Mod4 pair | All semiprimes | Lopsided only | Shift |
+|-----------|---------------:|-------------:|------:|
+| mod4_1x3 (mixed families) | 40.0% | 36.4% | −3.6 pp |
+| mod4_3x3 (both gaussian) | 23.7% | 22.9% | −0.9 pp |
+| mod4_1x1 (both pythagorean) | 16.4% | 13.7% | −2.7 pp |
+| even-involved (factor of 2) | 19.8% | **27.0%** | **+7.2 pp** |
+
+The lopsided constraint systematically shifts the distribution toward even-involved pairs. The explanation is structural: any semiprime of the form 2×p is always lopsided (p is at least 2 bits larger than 2 for p ≥ 5), so the entire even semiprime population is absorbed into the lopsided bucket. Mixed (1x3) and symmetric (1x1, 3x3) pairs are all proportionally reduced.
 
 ### Lopsidedness grows with range
 
-```
+```bash
 primehelix compare-ranges \
-  --a-start 1 --a-stop 50000 \
-  --b-start 50000 --b-stop 100000 \
-  --only-classification semiprime --top-delta 8 --json
+  --a-start 1 --a-stop 500000 \
+  --b-start 500000 --b-stop 1000000 \
+  --only-classification semiprime --top-delta 6 --json
 ```
 
 | Structure | delta | ratio |
 |-----------|------:|------:|
-| semiprime \| lopsided \| mod4_1x3 | +4.20% | 1.21× |
-| semiprime \| moderate \| mod4_1x3 | −3.01% | 0.83× |
-| semiprime \| lopsided \| mod4_3x3 | +2.38% | 1.18× |
-| semiprime \| moderate \| mod4_3x3 | −2.31% | 0.77× |
+| semiprime \| lopsided \| mod4_1x3 | +2.69% | 1.11× |
+| semiprime \| moderate \| mod4_1x3 | −2.05% | 0.85× |
+| semiprime \| lopsided \| mod4_3x3 | +1.51% | 1.09× |
+| semiprime \| moderate \| mod4_3x3 | −1.39% | 0.81× |
+| semiprime \| lopsided \| mod4_1x1 | +1.29% | 1.14× |
+| semiprime \| moderate \| mod4_1x1 | −0.66% | 0.90× |
 
-As the integer range shifts from [1, 50k) to [50k, 100k), lopsided semiprimes gain share at the expense of moderate ones — consistently across all mod4 families. This reflects the growing gap between small primes (reused as the smaller factor) and the larger prime cofactors needed to reach higher products.
+As the range shifts from [1, 500k) to [500k, 1M), lopsided semiprimes gain share and moderate ones shrink — uniformly across all three odd mod4 families. The mechanism: small primes (2, 3, 5, 7, …) are repeatedly reused as the smaller factor in semiprimes that reach into higher ranges, producing an ever-wider bit-gap between the two factors.
 
 ---
 
