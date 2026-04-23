@@ -94,6 +94,18 @@ def print_coil(fp, show_signature: bool = False) -> None:
     else:
         table.add_row("type", Text("lopsided semiprime", style="yellow"))
 
+    if fp.bit_gap == 0 and fp.balance < 0.1:
+        insight = "nearly equal factors — helix arc evenly split between p and q"
+    elif fp.bit_gap == 0:
+        insight = "same bit-length, moderate separation — RSA-like structure"
+    elif fp.bit_gap <= 3:
+        insight = f"{fp.bit_gap}-bit gap — slight asymmetry, both factors visible in arc"
+    elif fp.bit_gap <= 10:
+        insight = f"{fp.bit_gap}-bit gap — smaller prime compresses arc toward n"
+    else:
+        insight = f"{fp.bit_gap}-bit gap — structure dominated by large factor; small prime nearly invisible"
+    table.add_row("insight", Text(insight, style="dim"))
+
     if show_signature:
         table.add_row("", "")
         table.add_row("sig (geom)", fp.sig_geom[:32] + "…")

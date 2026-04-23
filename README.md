@@ -6,7 +6,29 @@ Most factoring tools tell you *what* the factors are. primehelix also tells you 
 
 ---
 
-## Quick look
+## Quick start
+
+```bash
+git clone https://github.com/onojk/primehelix.git
+cd primehelix
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .
+```
+
+```bash
+primehelix classify 2147483646
+primehelix factor 2147483646 --verbose
+primehelix classify 1300039 --coil
+```
+
+On Linux, install GMP before `pip install`:
+```bash
+sudo apt install libgmp-dev libmpfr-dev libmpc-dev
+```
+
+---
+
+## Examples
 
 ```
 $ primehelix classify 2147483646
@@ -41,17 +63,18 @@ Pipeline steps:
 ```
 
 ```
-$ primehelix classify 110000479000513 --coil
+$ primehelix classify 1300039 --coil
 
   classification  │ SEMIPRIME
-  factorization   │ 10007 × 10993007
+  factorization   │ 13 × 100003
 
-  ── coil footprint ──────────────────────────
-  d(n → q)        │ 0.499983
-  d(q → p)        │ 0.000023
-  d(p → 1)        │ 0.499994
-  balance |p-q|/√n│ 0.031109
-  type            │ lopsided semiprime
+  ── coil footprint ──────────────────────────────────────────────
+  bit_gap               │ 13
+  balance |p-q|/√n      │ 87.695716
+  normalized (f1,f2,f3) │ (0.9318, 0.0682, 0.0000)
+  type                  │ lopsided semiprime
+  insight               │ 13-bit gap — structure dominated by large factor;
+                        │ small prime nearly invisible
 ```
 
 ```
