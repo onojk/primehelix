@@ -30,3 +30,5 @@ media/
 
 # Logs
 *.log
+.cache/
+*.pkl

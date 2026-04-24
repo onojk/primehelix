@@ -1,11 +1,20 @@
+import os
+import random
+import numpy as np
 from bisect import bisect_left, bisect_right
 from math import ceil, isqrt
-import os
+import pickle
+import pathlib
+
+
+# Deterministic behavior
+random.seed(0)
+np.random.seed(0)
 
 
 THETA = 0.25
 
-# FAST_MODE for CI (smaller limits)
+# FAST_MODE for CI
 FAST_MODE = os.getenv("FAST_MODE") == "1"
 
 LIMITS = (
@@ -13,6 +22,11 @@ LIMITS = (
     if FAST_MODE
     else [10_000, 100_000, 1_000_000, 10_000_000, 100_000_000]
 )
+
+
+# Cache setup
+CACHE_DIR = pathlib.Path(".cache")
+CACHE_DIR.mkdir(exist_ok=True)
 
 
 def sieve(limit):
@@ -28,10 +42,25 @@ def sieve(limit):
     return [i for i in range(2, limit + 1) if is_prime[i]]
 
 
+def sieve_cached(limit):
+    cache_file = CACHE_DIR / f"primes_{limit}.pkl"
+
+    if cache_file.exists():
+        print(f"Loading primes from cache: {cache_file}")
+        with open(cache_file, "rb") as f:
+            return pickle.load(f)
+
+    print(f"Sieve up to {limit:,}...")
+    primes = sieve(limit)
+
+    print(f"Caching primes to: {cache_file}")
+    with open(cache_file, "wb") as f:
+        pickle.dump(primes, f)
+
+    return primes
+
+
 def q_threshold_for_theta(p, theta):
-    # p <= (p*q)^theta
-    # log(p) <= theta(log(p)+log(q))
-    # log(q) >= (1/theta - 1) log(p)
     exponent = (1.0 / theta) - 1.0
     return ceil(p ** exponent)
 
@@ -65,13 +94,12 @@ def main():
     prime_limit = max_limit // 2
 
     mode = "FAST_MODE" if FAST_MODE else "FULL_MODE"
-    print(f"Sieve up to {prime_limit:,}... ({mode})")
+    print(f"\n=== EXACT LOPSIDED COUNTS ({mode}) ===")
 
-    primes = sieve(prime_limit)
-    print(f"Primes found: {len(primes):,}")
+    primes = sieve_cached(prime_limit)
+    print(f"Primes loaded: {len(primes):,}")
 
-    print("\n=== EXACT LOPSIDED COUNTS ===")
-    print(f"Definition: n = p*q is lopsided if min(p,q) <= n^{THETA}")
+    print(f"\nDefinition: n = p*q is lopsided if min(p,q) <= n^{THETA}")
     print()
     print(f"{'N':>14} {'total':>14} {'lopsided':>14} {'balanced':>14} {'percent':>10}")
     print("-" * 72)
