@@ -7,6 +7,8 @@
 
 **primehelix shows how structural constraints reshape integer distributions — beyond what naive prime-counting predicts.**
 
+The naive model treats semiprimes as products of two random primes. The actual distribution is not random: at 1M scale roughly 73% of semiprimes are lopsided (factors differing by more than 8 bits), rising to 79% at 10M. Balanced, RSA-like semiprimes account for less than 1% throughout — and their share shrinks as the range grows. PrimeHelix measures this skew precisely, tracks how it compounds with scale, and provides pre-computed datasets so the numbers can be verified without running anything.
+
 Every integer receives a compact **structure label** encoding classification, geometric balance, and residue-family membership into one token: `semiprime | lopsided | mod4_1x3`. Those labels are the common currency across all five commands: classify one number, scan a million, compare two ranges, track trends over time.
 
 ---
