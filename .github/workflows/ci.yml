@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
       - name: Install dependencies
         run: |
@@ -34,7 +35,21 @@ jobs:
           . .venv/bin/activate
           pytest -q
 
-      - name: Smoke test (core script)
+      - name: Smoke test exact counts
         run: |
           . .venv/bin/activate
-          python exact_lopsided_counts.py > /dev/null
+          FAST_MODE=1 python exact_lopsided_counts.py > /dev/null
+
+      - name: Generate basic plots
+        run: |
+          . .venv/bin/activate
+          python plot_lopsided_convergence.py
+          python plot_multi_theta.py
+          python plot_multi_theta_delta.py
+
+      - name: Upload plots
+        uses: actions/upload-artifact@v4
+        with:
+          name: plots-${{ matrix.python-version }}
+          path: |
+            *.png
