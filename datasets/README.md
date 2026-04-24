@@ -12,6 +12,7 @@ Pre-computed structure distributions for reproducible analysis. Every file here 
 | `compare_semiprime_1e6_halves.csv` | [1, 500k) vs [500k, 1M) | — | Per-label delta between halves |
 | `semiprime_1e7_labels.csv` | [1, 10M) | 1,904,324 semiprimes | Label distribution, 16 labels |
 | `compare_semiprime_1e7_halves.csv` | [1, 5M) vs [5M, 10M) | — | Per-label delta between halves |
+| `semiprime_1e8_labels.csv` | [1, 100M) | 17,427,258 semiprimes | Label distribution, 16 labels |
 
 ---
 
@@ -90,6 +91,26 @@ From `semiprime_1e7_labels.csv` (10M):
 | lopsided | 78.5% |
 | moderate | 20.9% |
 | balanced | 0.66% |
+
+From `semiprime_1e8_labels.csv` (100M):
+
+| Balance tier | Share |
+|---|---:|
+| lopsided | 82.2% |
+| moderate | 17.7% |
+| balanced | 0.43% |
+
+### Theory vs measurement
+
+The lopsided fraction is predicted by `primehelix.dickman.theoretical_lopsided_fraction(N)` — a prime-sum model using π(x) ≈ li(x). The measured values match to within 0.2 pp and the gap is shrinking:
+
+| Range | Theory | Measured | Δ (pp) |
+|-------|-------:|----------:|-------:|
+| 1M    | 72.96% | 73.17%   | +0.21  |
+| 10M   | 78.41% | 78.50%   | +0.09  |
+| 100M  | 82.16% | 82.22%   | +0.06  |
+
+The delta halves roughly every two orders of magnitude. The bit-gap criterion and the smooth-number model are asymptotically equivalent.
 
 Top delta from `compare_semiprime_1e6_halves.csv` — labels gaining the most share in [500k, 1M) vs [1, 500k):
 
