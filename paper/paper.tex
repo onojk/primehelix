@@ -16,7 +16,7 @@
 We study the distribution of semiprimes \(n = pq\) (with \(p \leq q\)) through the
 normalized logarithmic coordinate \(\theta = \frac{\log p}{\log n}\).  Exact enumeration
 over \(N \leq 10^8\) shows that the proportion \(P(N,\theta_0)\) of semiprimes satisfying
-\(\theta \leq \theta_0\) increases monotonically with \(N\) and appears to converge to a
+\(\theta \leq \theta_0\) increases monotonically with \(N\) and is consistent with convergence to a
 limiting value \(P_\infty(\theta_0)\), but the rate of convergence is extremely slow.
 The deficit \(\delta(N,\theta_0) = P_\infty(\theta_0) - P(N,\theta_0)\) remains
 substantial even at \(N = 10^8\), consistent with Dickman-type logarithmic corrections.
@@ -49,6 +49,17 @@ We study semiprimes \(n = pq\) with \(p \leq q\) and focus on the normalized coo
 \]
 This parameter captures the relative size of the smaller factor and provides a natural
 measure of factor asymmetry.
+
+Classical results in analytic number theory describe the distribution of smooth numbers
+and the frequency of integers with a smallest prime factor in a given range
+(Dickman \cite{dickman1930}, Hildebrand--Tenenbaum \cite{hildebrand1993},
+Tenenbaum \cite{tenenbaum1995}).  These results characterize the \emph{absolute} size
+of the smallest prime factor relative to the integer, typically through the Dickman
+function \(\rho(u)\) and its analogues.  They do not, however, explicitly study the
+\emph{normalized} coordinate \(\theta = \log p / \log n\) for semiprimes, nor the
+convergence of its distribution as \(N \to \infty\).  The present work provides
+empirical evidence for this distribution and its convergence behavior, complementing
+the theoretical framework with quantitative data over \(N \leq 10^8\).
 
 The main contributions of this note are: (i) to document empirically the extremely slow
 convergence of \(P(N,\theta_0)\) to its limit, characterizing the deficit locally as a
