@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ["main", "master"]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -35,12 +39,12 @@ jobs:
           . .venv/bin/activate
           pytest -q
 
-      - name: Smoke test exact counts
+      - name: Smoke test exact counts (FAST_MODE)
         run: |
           . .venv/bin/activate
           FAST_MODE=1 python exact_lopsided_counts.py > /dev/null
 
-      - name: Generate basic plots
+      - name: Generate plots
         run: |
           . .venv/bin/activate
           python plot_lopsided_convergence.py
