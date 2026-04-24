@@ -1,0 +1,325 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\title{On the Distribution of Smaller Factors in Semiprimes}
+\author{Jonathan Kendall}
+\date{April 24, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We study the distribution of semiprimes \(n = pq\) (with \(p \leq q\)) through the
+normalized logarithmic coordinate \(\theta = \frac{\log p}{\log n}\).  Exact enumeration
+over \(N \leq 10^8\) shows that the proportion \(P(N,\theta_0)\) of semiprimes satisfying
+\(\theta \leq \theta_0\) increases monotonically with \(N\) and appears to converge to a
+limiting value \(P_\infty(\theta_0)\), but the rate of convergence is extremely slow.
+The deficit \(\delta(N,\theta_0) = P_\infty(\theta_0) - P(N,\theta_0)\) remains
+substantial even at \(N = 10^8\), consistent with Dickman-type logarithmic corrections.
+Over the observed range \(N \in [10^4, 10^8]\), the deficit is well approximated
+\emph{locally} by a linear function of \(\log N\):
+\[
+  \delta(N,\theta_0) \;\approx\; a(\theta_0) - b(\theta_0)\,\log N,
+\]
+where \(b(\theta_0)\) is the empirical convergence rate.  This local fit has \(R^2 > 0.97\)
+for all four tested values of \(\theta_0\), and the rates satisfy the empirical regression
+\(b(\theta_0) \approx k(1-\theta_0)^{\alpha}\) with \(k \approx 0.015\),
+\(\alpha \approx 3.1\) (fit to 4 data points, \(R^2 = 0.97\)).
+
+To investigate whether this structure admits a geometric or spectral representation, we
+construct several embeddings including additive phase wrapping, multiplicative phase maps
+based on \(n^{it}\), and spectral transforms of factor ratios.  Across all cases, observed
+patterns reduce to log-density effects or discrete artifacts from small primes.
+
+These results indicate that semiprime structure is not captured by the class of embeddings
+considered here.  The \(\theta\) coordinate provides the most stable description of factor
+asymmetry, and the observed slow convergence is consistent with ratio-constraint phenomena
+in multiplicative number theory.
+\end{abstract}
+
+\section{Introduction}
+
+We study semiprimes \(n = pq\) with \(p \leq q\) and focus on the normalized coordinate
+\[
+  \theta = \frac{\log p}{\log n}.
+\]
+This parameter captures the relative size of the smaller factor and provides a natural
+measure of factor asymmetry.
+
+The main contributions of this note are: (i) to document empirically the extremely slow
+convergence of \(P(N,\theta_0)\) to its limit, characterizing the deficit locally as a
+linear function of \(\log N\) over the range \(N \in [10^4, 10^8]\); and (ii) to show
+that several natural geometric and spectral embeddings fail to recover this structure.
+
+\section{Definitions}
+
+Let \(n = pq\) be a semiprime with \(p \leq q\).  We define the normalized logarithmic
+coordinate
+\[
+  \theta = \frac{\log p}{\log n}.
+\]
+For a fixed threshold \(\theta_0 < \frac{1}{2}\), define
+\[
+  P(N,\theta_0) = \Pr(\theta \leq \theta_0)
+\]
+over semiprimes \(n \leq N\).
+
+The condition \(\theta \leq \theta_0\) is equivalent to
+\[
+  p \leq n^{\theta_0} = (pq)^{\theta_0},
+\]
+which implies
+\[
+  p^{1-\theta_0} \leq q^{\theta_0} \quad \Longrightarrow \quad
+  p \leq q^{\,\theta_0/(1-\theta_0)}.
+\]
+Thus, \(\theta\) imposes a relative size constraint between the two prime factors rather
+than a classical smoothness condition.
+
+The algebraic identity
+\begin{equation}\label{eq:identity}
+  \log\!\left(\frac{p}{q}\right) = (2\theta - 1)\,\log n
+\end{equation}
+follows immediately: since \(\log p = \theta\log n\) and \(\log q = (1-\theta)\log n\),
+one has \(\log(p/q) = \theta\log n - (1-\theta)\log n = (2\theta-1)\log n\).  This
+identity holds exactly for every semiprime (Figure~\ref{fig:scatter}).
+
+\section{Empirical Observations}
+
+All values were computed via exact enumeration and exact factorization using a
+smallest-prime-factor sieve; no sampling or probabilistic estimation was used.
+
+\subsection{Convergence table}
+
+Table~\ref{tab:convergence} records \(P(N,\theta_0)\) for
+\(\theta_0 \in \{0.20,\,0.25,\,0.30,\,0.35\}\ \) and
+\(N \in \{10^4,\,10^5,\,10^6,\,10^7,\,10^8\}\).
+
+\begin{table}[h]
+\centering
+\caption{Proportion \(P(N,\theta_0)\) of semiprimes \(n \leq N\) satisfying
+  \(\theta \leq \theta_0\).  All values in percent.}
+\label{tab:convergence}
+\begin{tabular}{rcccc}
+\toprule
+\(N\) & \(\theta_0 = 0.20\) & \(\theta_0 = 0.25\) & \(\theta_0 = 0.30\) & \(\theta_0 = 0.35\) \\
+\midrule
+\(10^4\) & 49.52 & 59.28 & 67.73 & 76.46 \\
+\(10^5\) & 51.93 & 60.77 & 69.40 & 77.27 \\
+\(10^6\) & 53.55 & 62.47 & 70.51 & 78.39 \\
+\(10^7\) & 55.53 & 63.74 & 71.83 & 79.19 \\
+\(10^8\) & 56.29 & 64.95 & 72.74 & 79.95 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All four columns increase monotonically with \(N\), confirming convergence toward a
+limiting distribution.  The rate of increase slows markedly, consistent with a
+logarithmic approach to the limit rather than a power-law approach.
+
+\subsection{Theta and factor ratio}
+
+Figure~\ref{fig:scatter} shows the joint distribution of \(\theta\) and
+\(\log(p/q)\) for all semiprimes \(n \leq 10^6\).  The scatter lies exactly on the
+one-parameter family of lines \(\log(p/q) = (2\theta-1)\log n\) (identity
+\eqref{eq:identity}), confirming that \(\theta\) fully determines the factor ratio once
+\(n\) is fixed.  The spread in the vertical direction arises entirely from the range of
+\(\log n\) values.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\textwidth]{theta_vs_logratio.png}
+\caption{Factor-ratio $\log(p/q)$ versus $\theta$ for all semiprimes $n \leq 10^6$
+  (30\,000 sampled points shown; colour encodes $\log n$).
+  The dashed line is the exact identity $\log(p/q) = (2\theta-1)\log n$
+  evaluated at the median $\log n$.}
+\label{fig:scatter}
+\end{figure}
+
+\subsection{Local linear approximation to the deficit}
+
+Define the deficit \(\delta(N,\theta_0) = 1 - P(N,\theta_0)\).  Table~\ref{tab:convergence}
+shows that \(\delta\) decreases with \(N\), but very slowly: at \(\theta_0 = 0.25\) the
+deficit falls only from \(40.72\%\) to \(35.05\%\) as \(N\) grows by four orders of
+magnitude.
+
+Within the observed range \(N \in [10^4, 10^8]\), a linear regression in \(\log N\)
+provides a useful \emph{local} description:
+\begin{equation}\label{eq:model}
+  \delta(N,\theta_0) \;\approx\; a(\theta_0) - b(\theta_0)\,\log N
+  \qquad \text{(empirical fit, } N \in [10^4, 10^8]\text{)}.
+\end{equation}
+This is not claimed to be an asymptotic law; extrapolating \eqref{eq:model} to large
+\(N\) would predict \(\delta < 0\), which is impossible.  The true deficit likely
+involves slower-decaying corrections (e.g., of order \(\log\log N / \log N\)) that
+become distinguishable only at much larger \(N\).
+
+Table~\ref{tab:fit} records the regression parameters for each \(\theta_0\).
+
+\begin{table}[h]
+\centering
+\caption{Parameters of the local linear fit \(\delta \approx a(\theta_0) - b(\theta_0)\log N\)
+  over \(N \in [10^4, 10^8]\).  All \(R^2\) values exceed \(0.97\) within this range;
+  the fit is not valid outside it.}
+\label{tab:fit}
+\begin{tabular}{cccr}
+\toprule
+\(\theta_0\) & \(a(\theta_0)\) & \(b(\theta_0)\) & \(R^2\) \\
+\midrule
+0.20 & 0.5692 & 0.007444 & 0.9754 \\
+0.25 & 0.4635 & 0.006216 & 0.9955 \\
+0.30 & 0.3702 & 0.005402 & 0.9904 \\
+0.35 & 0.2709 & 0.003866 & 0.9954 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The high \(R^2\) values confirm that, over the four observed decades, the deficit
+decreases at a nearly constant rate per unit \(\log N\).  The rate \(b(\theta_0)\)
+itself depends on \(\theta_0\) and is analyzed in Section~\ref{sec:bscaling}.
+
+\subsection{Scaling of the convergence rate \texorpdfstring{$b(\theta_0)$}{b(theta)}}
+\label{sec:bscaling}
+
+The empirical rate \(b(\theta_0)\) from Table~\ref{tab:fit} decreases as \(\theta_0\)
+increases, meaning that a larger imbalance threshold corresponds to a faster-decreasing
+deficit within the observed range.  We fit two parametric curves to the four data points
+as \emph{descriptive regressions}, not theoretical predictions:
+
+\paragraph{Model~1 (empirical).}
+\[
+  b(\theta_0) \approx k\,(1-\theta_0)^{\alpha},
+  \qquad k \approx 0.01504,\quad \alpha \approx 3.056,\quad R^2 = 0.974.
+\]
+
+\paragraph{Model~2 (empirical).}
+\[
+  b(\theta_0) \approx \frac{c}{\theta_0^{\,\gamma}},
+  \qquad c \approx 1.300\times 10^{-3},\quad \gamma \approx 1.109,\quad R^2 = 0.938.
+\]
+
+Model~1 fits the four data points more closely (\(R^2 = 0.974\) vs.\ \(0.938\)).
+Both forms predict \(b \to 0\) as \(\theta_0 \to \tfrac{1}{2}\), qualitatively
+consistent with the known scarcity of nearly balanced semiprimes.
+\emph{Caution}: these regressions are fit to only four values of \(\theta_0\) and
+should be understood as summaries of the observed behavior, not as laws with theoretical
+backing.  Extending the table to additional \(\theta_0\) values and larger \(N\) would
+be needed to discriminate between functional forms.
+
+\section{Geometric and Spectral Tests}
+
+We tested several candidate embeddings:
+\begin{itemize}
+  \item Additive phase wrapping: \(\phi_t(n) = t\log n \bmod 2\pi\)
+  \item Multiplicative phase maps using \(n^{it}\)
+  \item Spectral fingerprint \(C(t) = \bigl|\sum e^{it\log n}\bigr|\,/\,N\)
+  \item Factor-ratio spectrum \(C_{\mathrm{ratio}}(t) = \bigl|\sum e^{it\log(p/q)}\bigr|\,/\,N\)
+\end{itemize}
+
+Localization was assessed by examining stability under variation of \(N\) and clustering
+by \(\theta\).  No stable localization was observed.
+
+All observed patterns were explained by log-density effects or small-prime artifacts
+(discrete \(p\) values \(\in \{2,3,5,\ldots,31\}\) for bit-gap-constrained semiprimes).
+None of the embeddings captured factor asymmetry.
+
+\section{Results}
+
+\subsection{Summary of empirical findings}
+
+For fixed \(\theta_0 \in (0, \tfrac{1}{2})\), the following is established empirically:
+\begin{enumerate}
+  \item \(P(N,\theta_0)\) increases monotonically with \(N\) for all four tested thresholds.
+  \item The increase is extremely slow: over four decades of \(N\), the gain is at most
+    \(6.8\%\) (at \(\theta_0 = 0.20\)), compared with the \(\sim 50\%\) gap that remains
+    at \(N = 10^8\).
+  \item Within the observed range, the deficit \(\delta(N,\theta_0) = 1 - P(N,\theta_0)\)
+    decreases at a rate well approximated by a constant per unit \(\log N\), with rate
+    \(b(\theta_0)\) as tabulated in Table~\ref{tab:fit}.
+\end{enumerate}
+
+\subsection{Interpretation and connection to known theory}
+
+The extremely slow convergence is qualitatively consistent with what analytic number theory
+predicts for ratio-constrained semiprimes.  The density of semiprimes \(n = pq \leq N\)
+with \(p \leq N^{u}\) for fixed \(u < \tfrac{1}{2}\) is governed by sums of the form
+\(\sum_{p \leq N^u} \pi(N/p)\), where \(\pi\) is the prime counting function.  Standard
+sieve estimates (see Hildebrand--Tenenbaum \cite{hildebrand1993} and
+Tenenbaum \cite{tenenbaum1995}) show that such sums accumulate logarithmic corrections
+involving factors of \(\log\log N / \log N\), producing convergence that is invisible
+over a few decades but genuine asymptotically.
+
+The local linear fit \eqref{eq:model} captures the dominant behavior in the observed
+range \([10^4, 10^8]\), but it is a finite-range approximation: the true deficit decays
+to zero more slowly than any fixed linear function of \(\log N\) would predict, and
+the functional form of \(P_\infty(\theta_0)\) is not determined by our data.  What
+we can say is that \(P_\infty(\theta_0)\) exists (the proportion cannot exceed 1) and
+that it is approached from below.
+
+\subsection{The \(\theta\) coordinate}
+
+The exact identity \(\log(p/q) = (2\theta-1)\log n\) (equation~\eqref{eq:identity})
+shows that \(\theta\) and \(\log n\) together determine the factor ratio with no residual
+freedom.  This makes \(\theta\) a natural coordinate: it separates the role of the
+factor imbalance (encoded in \(\theta\)) from the role of the magnitude of \(n\)
+(encoded in \(\log n\)).  The observed convergence is therefore a statement about how
+the distribution of \(\theta\) across semiprimes \(n \leq N\) evolves as \(N\) grows,
+which is a well-posed and nontrivial question even if its full resolution requires
+deeper sieve-theoretic tools.
+
+\section{Conclusion}
+
+Semiprime factor structure is not captured by the class of additive, multiplicative, and
+spectral embeddings considered here.  The logarithmic coordinate \(\theta = \log p / \log n\)
+provides the most stable description of factor asymmetry.
+
+The principal empirical finding is that the deficit \(\delta(N,\theta_0)\) decreases
+extremely slowly with \(N\), covering only \(5\)--\(7\%\) over four decades.  Within
+the observed range \([10^4, 10^8]\), this decrease is well approximated locally by a
+linear function of \(\log N\), with rate parameter \(b(\theta_0)\) that itself varies
+smoothly with \(\theta_0\).  We do not claim this local fit as an asymptotic law;
+establishing the true rate of convergence of \(P(N,\theta_0)\) to its limit
+\(P_\infty(\theta_0)\), and determining \(P_\infty(\theta_0)\) itself, remain open
+problems accessible to sieve-theoretic methods.
+
+The negative results on geometric and spectral embeddings suggest that the logarithmic
+coordinate is not merely convenient but is in some sense the correct one for this problem.
+
+\begin{thebibliography}{9}
+
+\bibitem{dickman1930}
+K.~Dickman,
+``On the frequency of numbers containing prime factors of a certain relative
+  magnitude,''
+\textit{Arkiv f\"{o}r Matematik, Astronomi och Fysik},
+vol.~22A, no.~10, 1930.
+
+\bibitem{hildebrand1993}
+A.~Hildebrand and G.~Tenenbaum,
+``Integers without large prime factors,''
+\textit{Journal de Th\'{e}orie des Nombres de Bordeaux},
+vol.~5, pp.~411--484, 1993.
+
+\bibitem{tenenbaum1995}
+G.~Tenenbaum,
+\textit{Introduction to Analytic and Probabilistic Number Theory},
+Cambridge University Press, 1995.
+
+\bibitem{erdos1979}
+P.~Erd\H{o}s and C.~Pomerance,
+``On the distribution of smooth numbers,''
+in \textit{Number Theory, Carbondale 1979}, Lecture Notes in Math.\ 751,
+Springer, Berlin, 1979, pp.~173--183.
+
+\bibitem{halberstam1974}
+H.~Halberstam and H.-E.~Richert,
+\textit{Sieve Methods},
+Academic Press, London, 1974.
+
+\end{thebibliography}
+
+\end{document}

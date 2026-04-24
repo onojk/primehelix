@@ -1,0 +1,235 @@
+{
+  "experiment_1": {
+    "n_lopsided": 153718,
+    "n_qualifying_p": 25,
+    "baseline_mean_R": 0.025276739478061337,
+    "baseline_std_R": 0.003673725358414159,
+    "observed_mean_R": 0.026752025336952517,
+    "z_score": 0.40157761263025343,
+    "significant": false,
+    "n_rayleigh_sig": 1,
+    "top_p": [
+      {
+        "p": 97,
+        "n": 44,
+        "R": 0.10841617326958095,
+        "circ_std": 2.1079743837162286,
+        "rayleigh_p": 0.5987979184319211
+      },
+      {
+        "p": 67,
+        "n": 867,
+        "R": 0.06969267879849277,
+        "circ_std": 2.308098787093692,
+        "rayleigh_p": 0.014790537074848679
+      },
+      {
+        "p": 73,
+        "n": 678,
+        "R": 0.05466505997191829,
+        "circ_std": 2.41102904628524,
+        "rayleigh_p": 0.13185325326632852
+      },
+      {
+        "p": 53,
+        "n": 1436,
+        "R": 0.04154919345632078,
+        "circ_std": 2.522251838841358,
+        "rayleigh_p": 0.08380819344298185
+      },
+      {
+        "p": 89,
+        "n": 230,
+        "R": 0.040259431639267575,
+        "circ_std": 2.534723249637438,
+        "rayleigh_p": 0.6892647117223908
+      },
+      {
+        "p": 71,
+        "n": 736,
+        "R": 0.03305307263475975,
+        "circ_std": 2.611375403010502,
+        "rayleigh_p": 0.44764375772853593
+      },
+      {
+        "p": 47,
+        "n": 1744,
+        "R": 0.03227519774083421,
+        "circ_std": 2.6204794277074117,
+        "rayleigh_p": 0.16256833903078258
+      },
+      {
+        "p": 83,
+        "n": 385,
+        "R": 0.032224852371998125,
+        "circ_std": 2.6210750890926917,
+        "rayleigh_p": 0.6707327648427576
+      },
+      {
+        "p": 59,
+        "n": 1170,
+        "R": 0.03219481505131188,
+        "circ_std": 2.6214308545710656,
+        "rayleigh_p": 0.297450287267775
+      },
+      {
+        "p": 43,
+        "n": 1996,
+        "R": 0.031130292053145565,
+        "circ_std": 2.63422622902671,
+        "rayleigh_p": 0.14452570870011155
+      },
+      {
+        "p": 37,
+        "n": 2438,
+        "R": 0.025474463938272785,
+        "circ_std": 2.7092725011535195,
+        "rayleigh_p": 0.20554954150551316
+      },
+      {
+        "p": 29,
+        "n": 3256,
+        "R": 0.02468062725995187,
+        "circ_std": 2.720932437437079,
+        "rayleigh_p": 0.13760944853183452
+      },
+      {
+        "p": 41,
+        "n": 2133,
+        "R": 0.023684571270663982,
+        "circ_std": 2.736030498394407,
+        "rayleigh_p": 0.3022766275206139
+      },
+      {
+        "p": 61,
+        "n": 1090,
+        "R": 0.02072518913783098,
+        "circ_std": 2.7843869888831767,
+        "rayleigh_p": 0.6262366154150029
+      },
+      {
+        "p": 79,
+        "n": 500,
+        "R": 0.016505561587613304,
+        "circ_std": 2.864980938489329,
+        "rayleigh_p": 0.8727642107160003
+      },
+      {
+        "p": 19,
+        "n": 5079,
+        "R": 0.01395772220392396,
+        "circ_std": 2.9229171595749825,
+        "rayleigh_p": 0.37178801001312123
+      },
+      {
+        "p": 23,
+        "n": 4184,
+        "R": 0.012970238598842347,
+        "circ_std": 2.9479137994904456,
+        "rayleigh_p": 0.49469808500060974
+      },
+      {
+        "p": 17,
+        "n": 5678,
+        "R": 0.011246434431418676,
+        "circ_std": 2.995898576386415,
+        "rayleigh_p": 0.48766533541036006
+      },
+      {
+        "p": 7,
+        "n": 13125,
+        "R": 0.01033619523706997,
+        "circ_std": 3.023938968658223,
+        "rayleigh_p": 0.24605042940004207
+      },
+      {
+        "p": 31,
+        "n": 3014,
+        "R": 0.010305073206256517,
+        "circ_std": 3.024936019392782,
+        "rayleigh_p": 0.726130356411618
+      }
+    ],
+    "interpretation": "NO clustering detected.  p-values are uniformly interleaved on the helix \u2014 angle carries NO information about small factor p."
+  },
+  "experiment_2": {
+    "n_samples": 153718,
+    "loglog_a": -1.9002753278180649,
+    "loglog_b": 3.4147184039924223,
+    "loglog_r2": 0.8665996646312926,
+    "tautology_r2": 1.0,
+    "helix_angle_vs_ratio_r2": 4.828535361878217e-06,
+    "helix_angle_vs_theta_r2": 5.218807434870243e-06,
+    "multi_reg_r2": 0.07969660084501495,
+    "multi_reg_beta": [
+      -0.9009303787356633,
+      0.0028183570416100423,
+      -0.6460930126069512
+    ],
+    "residual_std": 0.8144767033657102
+  },
+  "experiment_3": {
+    "n_test": 1000,
+    "n_sectors": 120,
+    "full_search_size": 168,
+    "by_K": [
+      {
+        "K": 1,
+        "helix_exact_hr": 0.258,
+        "helix_approx_hr": 0.258,
+        "global_hr": 0.258,
+        "search_reduction_pct": 99.4
+      },
+      {
+        "K": 3,
+        "helix_exact_hr": 0.57,
+        "helix_approx_hr": 0.57,
+        "global_hr": 0.57,
+        "search_reduction_pct": 98.2
+      },
+      {
+        "K": 5,
+        "helix_exact_hr": 0.711,
+        "helix_approx_hr": 0.704,
+        "global_hr": 0.703,
+        "search_reduction_pct": 97.0
+      },
+      {
+        "K": 10,
+        "helix_exact_hr": 0.879,
+        "helix_approx_hr": 0.873,
+        "global_hr": 0.868,
+        "search_reduction_pct": 94.0
+      },
+      {
+        "K": 20,
+        "helix_exact_hr": 0.988,
+        "helix_approx_hr": 0.985,
+        "global_hr": 0.985,
+        "search_reduction_pct": 88.1
+      },
+      {
+        "K": 50,
+        "helix_exact_hr": 1.0,
+        "helix_approx_hr": 0.999,
+        "global_hr": 1.0,
+        "search_reduction_pct": 70.2
+      }
+    ],
+    "mean_lift_exact_pp": 0.00366666666666667,
+    "mean_lift_approx_pp": 0.000833333333333334,
+    "hard_cases": {
+      "10": {
+        "helix": 0.0,
+        "global": 0.0,
+        "lift": 0.0
+      },
+      "20": {
+        "helix": 0.7692307692307693,
+        "global": 0.7115384615384616,
+        "lift": 0.05769230769230771
+      }
+    },
+    "verdict": "HELIX MATCHES GLOBAL BASELINE \u2014 p-values are uniformly distributed across sectors; angle adds NO predictive power beyond global frequency"
+  }
+}

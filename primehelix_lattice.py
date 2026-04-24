@@ -4,18 +4,20 @@ primehelix_lattice.py — 3D semiprime lattice visualizer with family edges
 
 Install:  pip install pyglet
 Run:      python primehelix_lattice.py
-          python primehelix_lattice.py --n 600 --radius 80 --speed 0.3
+          python primehelix_lattice.py --n 2000 --radius 80 --speed 0.3
 
 Controls:
-  Left drag      rotate          Scroll       zoom
+  Left drag      rotate          Scroll       zoom in/out
   Double-click   reset view      Space        toggle auto-rotate
   1 / 2 / 3      toggle family strands / axis spokes / cross chords
-  [ / ]          N −100 / +100
-  R              reset camera    S            screenshot    Esc  quit
+  [ / ]          N −100 / +100  R            reset camera
+  S              screenshot      Esc          quit
 """
 from __future__ import annotations
 
+import array
 import argparse
+import bisect
 import ctypes
 import math
 import sys
@@ -31,15 +33,18 @@ try:
 except ImportError:
     sys.exit("pyglet not found — run: pip install pyglet")
 
-# ── Palette ───────────────────────────────────────────────────────────────────
-BG = (10 / 255, 10 / 255, 18 / 255, 1.0)
+# ── Constants ─────────────────────────────────────────────────────────────────
+# Sieve 1M integers → ~210k semiprimes at ~73% lopsided (bit-gap criterion).
+SCAN_LIMIT = 1_000_000
+
+BG = (10 / 255, 10 / 255, 18 / 255, 1.0)  # #0a0a12
 
 FAM_RGB: Dict[str, Tuple[float, float, float]] = {
-    "1x1":      (0.55, 0.20, 0.85),
-    "1x3":      (0.20, 0.82, 0.35),
-    "3x3":      (1.00, 0.42, 0.28),
-    "even":     (0.62, 0.62, 0.62),
-    "balanced": (1.00, 0.75, 0.10),
+    "1x1":      (159 / 255, 143 / 255, 248 / 255),  # #9f8ff8  purple
+    "1x3":      ( 62 / 255, 207 / 255, 150 / 255),  # #3ecf96  green
+    "3x3":      (240 / 255, 112 / 255,  80 / 255),  # #f07050  coral
+    "even":     (170 / 255, 170 / 255, 170 / 255),  # #aaaaaa  gray
+    "balanced": (255 / 255, 208 / 255, 128 / 255),  # #ffd080  amber
 }
 
 STRAND_ALPHA = 0.70
@@ -47,167 +52,200 @@ SPOKE_ALPHA  = 0.50
 CHORD_ALPHA  = 0.30
 CHORD_RGB    = (0.70, 0.70, 0.75)
 
-POINT_SIZE_HELIX = 4.0
-POINT_SIZE_AXIS  = 8.0
+POINT_SIZE_HELIX = 5.5
+POINT_SIZE_AXIS  = 9.5
 
-# ── Number theory (pure Python) ───────────────────────────────────────────────
+# ── Number theory ─────────────────────────────────────────────────────────────
 
-def _is_prime(n: int) -> bool:
-    if n < 2: return False
-    if n < 4: return True
-    if n % 2 == 0 or n % 3 == 0: return False
-    i = 5
-    while i * i <= n:
-        if n % i == 0 or n % (i + 2) == 0: return False
-        i += 6
-    return True
-
-
-def _spf(n: int) -> int:
-    """Smallest prime factor; returns n if n is prime."""
-    if n % 2 == 0: return 2
-    i = 3
-    while i * i <= n:
-        if n % i == 0: return i
-        i += 2
-    return n
+def _lopsided(p: int, q: int) -> bool:
+    # balance = (q-p)/sqrt(pq) >= 10  ↔  (q-p)² >= 100·p·q  (integer, no sqrt)
+    d = q - p
+    return d * d >= 100 * p * q
 
 
 def _residue_family(p: int, q: int) -> str:
-    if p == 2 or q == 2: return "even"
+    if p == 2 or q == 2:
+        return "even"
     a, b = p % 4, q % 4
-    if a == 1 and b == 1: return "1x1"
-    if a == 3 and b == 3: return "3x3"
+    if a == 1 and b == 1:
+        return "1x1"
+    if a == 3 and b == 3:
+        return "3x3"
     return "1x3"
-
-
-def _lopsided(p: int, q: int) -> bool:
-    return (q.bit_length() - p.bit_length()) > 8
 
 # ── Semiprime dataclass ───────────────────────────────────────────────────────
 
 @dataclass
 class SP:
-    idx:     int            # position in full N-sorted list
-    n:       int
-    p:       int
-    q:       int
+    idx:      int
+    n:        int
+    p:        int
+    q:        int
     lopsided: bool
-    family:  str
+    family:   str
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
-    lop_idx: int = -1       # index among lopsided semiprimes
-    bal_idx: int = -1       # index among balanced semiprimes
+    lop_idx: int = -1
+    bal_idx: int = -1
 
-# ── Data generation ───────────────────────────────────────────────────────────
+# ── Sieve-based semiprime generation ─────────────────────────────────────────
+# The fix for the low-lopsided-fraction bug: instead of scanning from n=4
+# and stopping at count semiprimes (which puts us in the n<11k range where
+# bit-gap lopsided fraction is ~25%), we sieve the full 1M range once and
+# uniformly sample `count` from it. The 1M range has ~73% lopsided fraction.
+
+_ALL_SP_DATA: Optional[List[Tuple[int, int, int, bool, str]]] = None
+
+
+def _build_sp_data(limit: int) -> List[Tuple[int, int, int, bool, str]]:
+    """Smallest-prime-factor sieve; return all semiprime tuples in [4, limit]."""
+    spf = array.array('i', range(limit + 1))
+    i = 2
+    while i * i <= limit:
+        if spf[i] == i:
+            for j in range(i * i, limit + 1, i):
+                if spf[j] == j:
+                    spf[j] = i
+        i += 1
+    out: List[Tuple[int, int, int, bool, str]] = []
+    for n in range(4, limit + 1):
+        p = spf[n]
+        if p == n:
+            continue          # n is prime
+        q = n // p
+        if spf[q] != q:
+            continue          # q is not prime → not a semiprime
+        out.append((n, p, q, _lopsided(p, q), _residue_family(p, q)))
+    return out
+
 
 def generate_semiprimes(count: int) -> List[SP]:
-    """Scan integers from 4 upward; return first `count` semiprimes."""
-    out: List[SP] = []
-    k = 4
-    while len(out) < count:
-        s = _spf(k)
-        if s < k:
-            q = k // s
-            if _is_prime(q):
-                out.append(SP(
-                    idx=len(out), n=k, p=s, q=q,
-                    lopsided=_lopsided(s, q),
-                    family=_residue_family(s, q),
-                ))
-        k += 1
-    return out
+    """Return `count` semiprimes sampled uniformly from [4, SCAN_LIMIT].
+
+    Uniform sampling from 1M integers preserves the ~73% lopsided fraction
+    regardless of how small `count` is. The sieve is built once and cached.
+    """
+    global _ALL_SP_DATA
+    if _ALL_SP_DATA is None:
+        print(f"Sieving to {SCAN_LIMIT:,} …", end=" ", flush=True)
+        t0 = time.time()
+        _ALL_SP_DATA = _build_sp_data(SCAN_LIMIT)
+        print(f"{len(_ALL_SP_DATA):,} semiprimes ({time.time() - t0:.2f}s)")
+
+    data = _ALL_SP_DATA
+    if len(data) > count:
+        step = len(data) / count
+        data = [data[int(i * step)] for i in range(count)]
+
+    return [SP(i, n, p, q, lop, fam)
+            for i, (n, p, q, lop, fam) in enumerate(data)]
 
 # ── Geometry ──────────────────────────────────────────────────────────────────
 
 def assign_positions(sps: List[SP], radius: float, span: float) -> None:
-    """Assign (x, y, z) to each SP in-place and set lop_idx / bal_idx."""
     lop = [s for s in sps if s.lopsided]
     bal = [s for s in sps if not s.lopsided]
+    n_lop = len(lop)
+    n_bal = len(bal)
 
     for i, sp in enumerate(lop):
         sp.lop_idx = i
         angle = i * 0.27
         sp.x = math.cos(angle) * radius
         sp.z = math.sin(angle) * radius
-        sp.y = (i / max(len(lop) - 1, 1) - 0.5) * span
+        sp.y = (i / max(n_lop - 1, 1) - 0.5) * span
 
     for i, sp in enumerate(bal):
         sp.bal_idx = i
         sp.x = 0.0
         sp.z = 0.0
-        sp.y = (i / max(len(bal) - 1, 1) - 0.5) * span
+        sp.y = (i / max(n_bal - 1, 1) - 0.5) * span
 
-# ── Edge builders ─────────────────────────────────────────────────────────────
+# ── Edge / line builders ──────────────────────────────────────────────────────
 
-def _vert6(sp: SP, r: float, g: float, b: float, a: float) -> List[float]:
+def _vert7(sp: SP, r: float, g: float, b: float, a: float) -> List[float]:
     return [sp.x, sp.y, sp.z, r, g, b, a]
 
 
 def build_strands(sps: List[SP]) -> List[float]:
-    """Family strands: line between consecutive semiprimes of the same family."""
+    """Colored lines between consecutive lopsided semiprimes of the same family."""
     verts: List[float] = []
     prev: Dict[str, SP] = {}
     for sp in sps:
-        r, g, b = FAM_RGB[sp.family if sp.lopsided else "balanced"]
+        if not sp.lopsided:
+            continue
+        r, g, b = FAM_RGB[sp.family]
         if sp.family in prev:
             p = prev[sp.family]
-            pr, pg, pb = FAM_RGB[p.family if p.lopsided else "balanced"]
-            verts += _vert6(p, pr, pg, pb, STRAND_ALPHA)
-            verts += _vert6(sp, r, g, b, STRAND_ALPHA)
+            pr, pg, pb = FAM_RGB[p.family]
+            verts += _vert7(p,  pr, pg, pb, STRAND_ALPHA)
+            verts += _vert7(sp, r,  g,  b,  STRAND_ALPHA)
         prev[sp.family] = sp
     return verts
 
 
 def build_spokes(sps: List[SP]) -> List[float]:
-    """Axis spokes: balanced → nearest lopsided by index distance."""
+    """Amber lines from each balanced point to the nearest lopsided by index."""
     lop = [s for s in sps if s.lopsided]
     if not lop:
         return []
+    lop_indices = [s.idx for s in lop]   # already sorted ascending
+
     r, g, b = FAM_RGB["balanced"]
     verts: List[float] = []
     for sp in sps:
         if sp.lopsided:
             continue
-        # find nearest lopsided by list index
-        nearest: Optional[SP] = None
-        best = 10 ** 9
-        for lp in lop:
-            d = abs(lp.idx - sp.idx)
-            if d < best:
-                best = d
-                nearest = lp
-        if nearest is None:
+        pos = bisect.bisect_left(lop_indices, sp.idx)
+        candidates: List[SP] = []
+        if pos < len(lop):
+            candidates.append(lop[pos])
+        if pos > 0:
+            candidates.append(lop[pos - 1])
+        if not candidates:
             continue
+        nearest = min(candidates, key=lambda lp: abs(lp.idx - sp.idx))
         lr, lg, lb = FAM_RGB[nearest.family]
-        verts += _vert6(sp,      r,  g,  b,  SPOKE_ALPHA)
-        verts += _vert6(nearest, lr, lg, lb, SPOKE_ALPHA)
+        verts += _vert7(sp,      r,  g,  b,  SPOKE_ALPHA)
+        verts += _vert7(nearest, lr, lg, lb, SPOKE_ALPHA)
     return verts
 
 
 def build_chords(sps: List[SP]) -> List[float]:
-    """Cross chords: adjacent lopsided semiprimes of different families."""
+    """Gray lines between adjacent lopsided semiprimes of different families."""
     lop = [s for s in sps if s.lopsided]
     verts: List[float] = []
     cr, cg, cb = CHORD_RGB
-    for a, b_sp in zip(lop, lop[1:]):
-        if a.family != b_sp.family:
-            verts += _vert6(a,    cr, cg, cb, CHORD_ALPHA)
-            verts += _vert6(b_sp, cr, cg, cb, CHORD_ALPHA)
+    for a_sp, b_sp in zip(lop, lop[1:]):
+        if a_sp.family != b_sp.family:
+            verts += _vert7(a_sp, cr, cg, cb, CHORD_ALPHA)
+            verts += _vert7(b_sp, cr, cg, cb, CHORD_ALPHA)
     return verts
 
 
+def build_axis_line(span: float) -> List[float]:
+    """Thin amber vertical line along the balanced-point axis."""
+    r, g, b = FAM_RGB["balanced"]
+    a = 0.45
+    return [
+        0.0, -span / 2, 0.0, r, g, b, a,
+        0.0,  span / 2, 0.0, r, g, b, a,
+    ]
+
+
 def compute_stats(sps: List[SP]) -> Dict:
-    n = len(sps)
+    total = len(sps)
     lop = sum(1 for s in sps if s.lopsided)
     fam: Dict[str, int] = {}
     for s in sps:
         fam[s.family] = fam.get(s.family, 0) + 1
     return {
-        "n": n, "lopsided": lop, "balanced": n - lop,
-        "lop_pct": 100.0 * lop / max(n, 1),
-        "bal_pct": 100.0 * (n - lop) / max(n, 1),
+        "n": total,
+        "lopsided": lop,
+        "balanced": total - lop,
+        "lop_pct": 100.0 * lop / max(total, 1),
+        "bal_pct": 100.0 * (total - lop) / max(total, 1),
         "fam": fam,
     }
 
@@ -257,14 +295,14 @@ out vec4 frag_color;
 void main() { frag_color = v_color; }
 """
 
-# ── VBO utilities ─────────────────────────────────────────────────────────────
+# ── VBO helpers ───────────────────────────────────────────────────────────────
 
 class VBO:
     __slots__ = ("vao", "vbo", "count", "stride")
 
     def __init__(self, data: List[float], stride: int):
         self.stride = stride
-        self.count = len(data) // stride
+        self.count  = len(data) // stride
         vao = gl.GLuint()
         vbo = gl.GLuint()
         gl.glGenVertexArrays(1, ctypes.byref(vao))
@@ -274,7 +312,8 @@ class VBO:
         if data:
             arr = (gl.GLfloat * len(data))(*data)
             gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
-            gl.glBufferData(gl.GL_ARRAY_BUFFER, ctypes.sizeof(arr), arr, gl.GL_STATIC_DRAW)
+            gl.glBufferData(gl.GL_ARRAY_BUFFER, ctypes.sizeof(arr),
+                            arr, gl.GL_STATIC_DRAW)
             gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
 
     def delete(self) -> None:
@@ -282,7 +321,7 @@ class VBO:
         gl.glDeleteBuffers(1, (gl.GLuint * 1)(self.vbo))
 
     def bind_point_attrs(self, prog_id: int) -> None:
-        """Bind position(vec3) + color(vec3), stride 6 floats."""
+        """Bind position(vec3) + color(vec3), stride=6."""
         sz = ctypes.sizeof(gl.GLfloat)
         gl.glBindVertexArray(self.vao)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
@@ -299,7 +338,7 @@ class VBO:
         gl.glBindVertexArray(0)
 
     def bind_line_attrs(self, prog_id: int) -> None:
-        """Bind position(vec3) + color(vec4), stride 7 floats."""
+        """Bind position(vec3) + color(vec4), stride=7."""
         sz = ctypes.sizeof(gl.GLfloat)
         gl.glBindVertexArray(self.vao)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
@@ -348,8 +387,7 @@ class LatticeWindow(pyglet.window.Window):
 
     _RESET_ROT_X  = -20.0
     _RESET_ROT_Y  =  30.0
-    _RESET_ZOOM   = -300.0
-    _DOUBLE_CLICK = 0.35   # seconds
+    _DOUBLE_CLICK = 0.35
 
     def __init__(self, args: argparse.Namespace):
         cfg = pyglet.gl.Config(
@@ -362,31 +400,31 @@ class LatticeWindow(pyglet.window.Window):
             caption="PrimeHelix Lattice",
             resizable=True, config=cfg,
         )
-        self._args    = args
-        self._count   = args.n
-        self._radius  = args.radius
-        self._speed   = args.speed
+        self._args   = args
+        self._count  = args.n
+        self._radius = args.radius
+        self._speed  = args.speed
 
-        self._rot_x   = self._RESET_ROT_X
-        self._rot_y   = self._RESET_ROT_Y
-        self._zoom    = self._RESET_ZOOM
-        self._auto    = True
-        self._last_t  = time.time()
+        # Default zoom fits the full helix in view: span = radius*4, FOV≈55°
+        self._zoom_default = -(args.radius * 4.0)
+        self._rot_x  = self._RESET_ROT_X
+        self._rot_y  = self._RESET_ROT_Y
+        self._zoom   = self._zoom_default
+        self._auto   = True
         self._click_t = 0.0
 
-        # Edge toggles
         self._show_strands = True
         self._show_spokes  = True
         self._show_chords  = True
 
-        # GPU handles (populated in _rebuild)
-        self._pt_prog: Optional[ShaderProgram] = None
-        self._ln_prog: Optional[ShaderProgram] = None
-        self._vbo_helix:   Optional[VBO] = None
-        self._vbo_axis:    Optional[VBO] = None
-        self._vbo_strands: Optional[VBO] = None
-        self._vbo_spokes:  Optional[VBO] = None
-        self._vbo_chords:  Optional[VBO] = None
+        self._pt_prog:      Optional[ShaderProgram] = None
+        self._ln_prog:      Optional[ShaderProgram] = None
+        self._vbo_helix:    Optional[VBO] = None
+        self._vbo_axis_pts: Optional[VBO] = None
+        self._vbo_axis_ln:  Optional[VBO] = None
+        self._vbo_strands:  Optional[VBO] = None
+        self._vbo_spokes:   Optional[VBO] = None
+        self._vbo_chords:   Optional[VBO] = None
         self._stats: Dict = {}
         self._y_center = 0.0
 
@@ -404,7 +442,7 @@ class LatticeWindow(pyglet.window.Window):
                                       Shader(_LN_FRAG, "fragment"))
 
     def _free_vbos(self) -> None:
-        for attr in ("_vbo_helix", "_vbo_axis",
+        for attr in ("_vbo_helix", "_vbo_axis_pts", "_vbo_axis_ln",
                      "_vbo_strands", "_vbo_spokes", "_vbo_chords"):
             v = getattr(self, attr)
             if v is not None:
@@ -413,8 +451,8 @@ class LatticeWindow(pyglet.window.Window):
 
     def _rebuild(self) -> None:
         self._free_vbos()
-        sps = generate_semiprimes(self._count)
-        span = self._radius * 2.8
+        sps  = generate_semiprimes(self._count)
+        span = self._radius * 4.0
         assign_positions(sps, self._radius, span)
         self._stats = compute_stats(sps)
 
@@ -424,22 +462,25 @@ class LatticeWindow(pyglet.window.Window):
         pid_pt = self._pt_prog.id
         pid_ln = self._ln_prog.id
 
-        # Points
+        # Points (stride=6: xyz rgb)
         h_data = _upload_points(sps, filt_lopsided=True)
         a_data = _upload_points(sps, filt_lopsided=False)
-        self._vbo_helix = VBO(h_data, stride=6)
-        self._vbo_axis  = VBO(a_data, stride=6)
+        self._vbo_helix    = VBO(h_data, stride=6)
+        self._vbo_axis_pts = VBO(a_data, stride=6)
         if h_data: self._vbo_helix.bind_point_attrs(pid_pt)
-        if a_data: self._vbo_axis.bind_point_attrs(pid_pt)
+        if a_data: self._vbo_axis_pts.bind_point_attrs(pid_pt)
 
-        # Edges
-        s_data = build_strands(sps)
+        # Lines (stride=7: xyz rgba)
+        al_data = build_axis_line(span)
+        s_data  = build_strands(sps)
         sp_data = build_spokes(sps)
         c_data  = build_chords(sps)
+        self._vbo_axis_ln = VBO(al_data, stride=7)
         self._vbo_strands = VBO(s_data,  stride=7)
         self._vbo_spokes  = VBO(sp_data, stride=7)
         self._vbo_chords  = VBO(c_data,  stride=7)
-        for vbo in (self._vbo_strands, self._vbo_spokes, self._vbo_chords):
+        for vbo in (self._vbo_axis_ln, self._vbo_strands,
+                    self._vbo_spokes, self._vbo_chords):
             if vbo.count:
                 vbo.bind_line_attrs(pid_ln)
 
@@ -473,27 +514,33 @@ class LatticeWindow(pyglet.window.Window):
         gl.glViewport(0, 0, *self.get_framebuffer_size())
 
         w, h = self.get_size()
-        mvp = _mvp(self._rot_x, self._rot_y, self._zoom, self._y_center, w, h)
+        mvp      = _mvp(self._rot_x, self._rot_y, self._zoom, self._y_center, w, h)
         mvp_flat = (gl.GLfloat * 16)(*mvp)
 
-        # ── Lines ─────────────────────────────────────────────────────────────
+        # Lines ───────────────────────────────────────────────────────────────
         self._ln_prog.use()
         mvp_loc = gl.glGetUniformLocation(self._ln_prog.id, b"mvp")
         gl.glUniformMatrix4fv(mvp_loc, 1, False, mvp_flat)
 
-        pairs = [
+        # Axis line is always visible
+        if self._vbo_axis_ln and self._vbo_axis_ln.count:
+            gl.glBindVertexArray(self._vbo_axis_ln.vao)
+            gl.glDrawArrays(gl.GL_LINES, 0, self._vbo_axis_ln.count)
+            gl.glBindVertexArray(0)
+
+        for vbo, visible in (
             (self._vbo_strands, self._show_strands),
             (self._vbo_spokes,  self._show_spokes),
             (self._vbo_chords,  self._show_chords),
-        ]
-        for vbo, visible in pairs:
+        ):
             if visible and vbo and vbo.count:
                 gl.glBindVertexArray(vbo.vao)
                 gl.glDrawArrays(gl.GL_LINES, 0, vbo.count)
                 gl.glBindVertexArray(0)
+
         self._ln_prog.stop()
 
-        # ── Points ────────────────────────────────────────────────────────────
+        # Points ──────────────────────────────────────────────────────────────
         self._pt_prog.use()
         mvp_loc_pt = gl.glGetUniformLocation(self._pt_prog.id, b"mvp")
         sz_loc     = gl.glGetUniformLocation(self._pt_prog.id, b"pt_size")
@@ -506,33 +553,32 @@ class LatticeWindow(pyglet.window.Window):
             gl.glBindVertexArray(0)
 
         gl.glUniform1f(sz_loc, POINT_SIZE_AXIS)
-        if self._vbo_axis and self._vbo_axis.count:
-            gl.glBindVertexArray(self._vbo_axis.vao)
-            gl.glDrawArrays(gl.GL_POINTS, 0, self._vbo_axis.count)
+        if self._vbo_axis_pts and self._vbo_axis_pts.count:
+            gl.glBindVertexArray(self._vbo_axis_pts.vao)
+            gl.glDrawArrays(gl.GL_POINTS, 0, self._vbo_axis_pts.count)
             gl.glBindVertexArray(0)
 
         self._pt_prog.stop()
 
-        # ── 2-D overlay ───────────────────────────────────────────────────────
+        # 2-D overlay ─────────────────────────────────────────────────────────
         gl.glDisable(gl.GL_DEPTH_TEST)
         self._update_labels()
         self._stat_lbl.draw()
         self._help_lbl.draw()
 
     def _update_labels(self) -> None:
-        s = self._stats
+        s   = self._stats
         fam = s.get("fam", {})
-        e = (
+        e   = (
             f"[1]strands={'on' if self._show_strands else 'off'}  "
-            f"[2]spokes={'on' if self._show_spokes else 'off'}  "
-            f"[3]chords={'on' if self._show_chords else 'off'}"
+            f"[2]spokes={'on'  if self._show_spokes  else 'off'}  "
+            f"[3]chords={'on'  if self._show_chords  else 'off'}"
         )
         self._stat_lbl.text = (
             f"N={s.get('n', 0):,}  lopsided {s.get('lop_pct', 0):.1f}%  "
-            f"balanced {s.get('bal_pct', 0):.1f}%  │  "
+            f"balanced {s.get('bal_pct', 0):.1f}%  zoom={abs(self._zoom):.0f}  │  "
             f"1x1={fam.get('1x1', 0):,}  1x3={fam.get('1x3', 0):,}  "
-            f"3x3={fam.get('3x3', 0):,}  even={fam.get('even', 0):,}  │  "
-            f"radius={self._radius:.0f}  zoom={abs(self._zoom):.0f}  {e}"
+            f"3x3={fam.get('3x3', 0):,}  even={fam.get('even', 0):,}  │  {e}"
         )
         self._help_lbl.x = self.width - 12
 
@@ -558,7 +604,10 @@ class LatticeWindow(pyglet.window.Window):
             self._rot_x -= dy * 0.35
 
     def on_mouse_scroll(self, x, y, sx, sy) -> None:
-        self._zoom = min(-20.0, max(-8_000.0, self._zoom + sy * 15.0))
+        # Proportional step: feels smooth at any zoom level.
+        # sy > 0 → scroll up → move camera forward (zoom in, less negative).
+        step = abs(self._zoom) * 0.08 * sy
+        self._zoom = min(-10.0, max(-8_000.0, self._zoom + step))
 
     def on_key_press(self, symbol, modifiers) -> None:
         K = pyglet.window.key
@@ -573,10 +622,11 @@ class LatticeWindow(pyglet.window.Window):
         elif symbol == K._3:
             self._show_chords = not self._show_chords
         elif symbol == K.BRACKETLEFT:
-            self._count = max(10, self._count - 100)
+            self._count = max(50, self._count - 100)
             self._rebuild()
         elif symbol == K.BRACKETRIGHT:
-            self._count += 100
+            cap = len(_ALL_SP_DATA) if _ALL_SP_DATA else 210_000
+            self._count = min(cap, self._count + 100)
             self._rebuild()
         elif symbol == K.R:
             self._reset_view()
@@ -588,14 +638,14 @@ class LatticeWindow(pyglet.window.Window):
     def _reset_view(self) -> None:
         self._rot_x = self._RESET_ROT_X
         self._rot_y = self._RESET_ROT_Y
-        self._zoom  = self._RESET_ZOOM
+        self._zoom  = self._zoom_default
 
 # ── CLI / main ────────────────────────────────────────────────────────────────
 
 def _parse() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="PrimeHelix 3D lattice visualizer")
-    p.add_argument("--n",      type=int,   default=600,
-                   help="Initial semiprime count (use ≥2000 for a visible helix)")
+    p.add_argument("--n",      type=int,   default=2000,
+                   help="Semiprimes to display (sampled from 1M range, ~73%% lopsided)")
     p.add_argument("--radius", type=float, default=80.0, help="Helix radius")
     p.add_argument("--speed",  type=float, default=0.3,  help="Auto-rotation speed")
     return p.parse_args()
@@ -603,16 +653,9 @@ def _parse() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse()
-    print(f"Building {args.n} semiprimes …")
-    t0 = time.time()
-    sps = generate_semiprimes(args.n)
-    lop = sum(1 for s in sps if s.lopsided)
-    lop_pct = 100.0 * lop / max(len(sps), 1)
-    print(f"Done in {time.time()-t0:.2f}s — "
-          f"{len(sps)} semiprimes, {lop_pct:.1f}% lopsided")
-    if lop < 20:
-        print(f"  ⚠  Only {lop} lopsided semiprimes visible at N={args.n}.")
-        print(f"     Run with --n 2000 or higher for a populated helix.")
+    sps  = generate_semiprimes(args.n)   # builds sieve cache; prints progress
+    lop  = sum(1 for s in sps if s.lopsided)
+    print(f"Displaying {len(sps):,} semiprimes — {lop / len(sps) * 100:.1f}% lopsided")
     win = LatticeWindow(args)
     pyglet.app.run()
 

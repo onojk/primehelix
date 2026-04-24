@@ -27,6 +27,7 @@ build/
 media/
 *.png
 !docs/*.png
+!paper/*.png
 
 # Logs
 *.log
