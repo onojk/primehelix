@@ -62,6 +62,14 @@ tenenbaum_snippets/
 *.txt
 
 # =========================
+# Large generated / cache
+# =========================
+.cache/
+media/
+*.pkl
+*.mp4
+
+# =========================
 # Allow curated figures ONLY
 # =========================
 !figures/

@@ -1,0 +1,503 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\newtheorem{conjecture}{Conjecture}
+\title{On the Distribution of Smaller Factors in Semiprimes}
+\author{Jonathan Kendall}
+\date{April 24, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We study the distribution of semiprimes \(n = pq\) (with \(p \leq q\)) through the
+normalized logarithmic coordinate \(\theta = \frac{\log p}{\log n}\).  Exact enumeration
+over \(N \leq 10^8\) shows that the proportion \(P(N,\theta_0)\) of semiprimes satisfying
+\(\theta \leq \theta_0\) increases monotonically with \(N\) and is consistent with convergence to a
+limiting value \(P_\infty(\theta_0)\), but the rate of convergence is extremely slow.
+The deficit \(\delta(N,\theta_0) = P_\infty(\theta_0) - P(N,\theta_0)\) remains
+substantial even at \(N = 10^8\), consistent with \(O(1/\!\log\log N)\) decay arising
+from the \(\log\log N\) accumulation of small prime contributions
+(Montgomery--Vaughan \cite{montgomery2007}, \S7.4).
+A second-order heuristic applied to the counting sum
+$\sum_{p \leq N^{\theta_0}} \pi(N/p)$ (Section~\ref{sec:corrected}) suggests the
+refined prefactor
+\[
+  f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + \tfrac{1}{2},
+\]
+which is consistent with reducing the relative prediction error for
+$b_{\mathrm{eff}} = \delta\cdot\log\log N$ from up to \(4.3\times\) (naive Mertens)
+to under \(1.21\times\) across eight thresholds \(\theta_0\in\{0.10,\ldots,0.45\}\);
+whether $C = \tfrac{1}{2}$ is the exact asymptotic constant remains open
+(Conjecture~\ref{conj:prefactor}).
+Over the observed range \(N \in [10^4, 10^8]\), \(\log\log N\) varies only from
+\(2.22\) to \(2.91\), a range too narrow to distinguish \(1/\!\log\log N\) decay from
+a local linear fit in \(\log N\).  Accordingly, the deficit is well approximated
+\emph{locally} by
+\[
+  \delta(N,\theta_0) \;\approx\; a(\theta_0) - b(\theta_0)\,\log N
+  \qquad (R^2 > 0.97 \text{ within } [10^4,10^8]),
+\]
+where \(b(\theta_0)\) is an empirical rate summarizing the behavior in this window.
+The empirical regression \(b(\theta_0) \approx k(1-\theta_0)^{\alpha}\),
+\(k \approx 0.015\), \(\alpha \approx 3.1\), is a descriptive fit to 4 data points.
+
+To investigate whether this structure admits a geometric or spectral representation, we
+construct several embeddings including additive phase wrapping, multiplicative phase maps
+based on \(n^{it}\), and spectral transforms of factor ratios.  Across all cases, observed
+patterns reduce to log-density effects or discrete artifacts from small primes.
+
+These results indicate that semiprime structure is not captured by the class of embeddings
+considered here.  The \(\theta\) coordinate provides the most stable description of factor
+asymmetry, and the observed slow convergence is consistent with ratio-constraint phenomena
+in multiplicative number theory.
+\end{abstract}
+
+\section{Introduction}
+
+We study semiprimes \(n = pq\) with \(p \leq q\) and focus on the normalized coordinate
+\[
+  \theta = \frac{\log p}{\log n}.
+\]
+This parameter captures the relative size of the smaller factor and provides a natural
+measure of factor asymmetry.
+
+Classical results in analytic number theory describe the distribution of smooth numbers
+and the frequency of integers with a smallest prime factor in a given range
+(Dickman \cite{dickman1930}, Hildebrand--Tenenbaum \cite{hildebrand1993},
+Tenenbaum \cite{tenenbaum1995}).  These results characterize the \emph{absolute} size
+of the smallest prime factor relative to the integer, typically through the Dickman
+function \(\rho(u)\) and its analogues.  They do not, however, explicitly study the
+\emph{normalized} coordinate \(\theta = \log p / \log n\) for semiprimes, nor the
+convergence of its distribution as \(N \to \infty\).  The present work provides
+empirical evidence for this distribution and its convergence behavior, complementing
+the theoretical framework with quantitative data over \(N \leq 10^8\).
+
+The main contributions of this note are: (i) to document empirically the extremely slow
+convergence of \(P(N,\theta_0)\) to its limit, characterizing the deficit locally as a
+linear function of \(\log N\) over the range \(N \in [10^4, 10^8]\); and (ii) to show
+that several natural geometric and spectral embeddings fail to recover this structure.
+
+\section{Definitions}
+
+Let \(n = pq\) be a semiprime with \(p \leq q\).  We define the normalized logarithmic
+coordinate
+\[
+  \theta = \frac{\log p}{\log n}.
+\]
+For a fixed threshold \(\theta_0 < \frac{1}{2}\), define
+\[
+  P(N,\theta_0) = \Pr(\theta \leq \theta_0)
+\]
+over semiprimes \(n \leq N\).
+
+The condition \(\theta \leq \theta_0\) is equivalent to
+\[
+  p \leq n^{\theta_0} = (pq)^{\theta_0},
+\]
+which implies
+\[
+  p^{1-\theta_0} \leq q^{\theta_0} \quad \Longrightarrow \quad
+  p \leq q^{\,\theta_0/(1-\theta_0)}.
+\]
+Thus, \(\theta\) imposes a relative size constraint between the two prime factors rather
+than a classical smoothness condition.
+
+The algebraic identity
+\begin{equation}\label{eq:identity}
+  \log\!\left(\frac{p}{q}\right) = (2\theta - 1)\,\log n
+\end{equation}
+follows immediately: since \(\log p = \theta\log n\) and \(\log q = (1-\theta)\log n\),
+one has \(\log(p/q) = \theta\log n - (1-\theta)\log n = (2\theta-1)\log n\).  This
+identity holds exactly for every semiprime (Figure~\ref{fig:scatter}).
+
+\section{Empirical Observations}
+
+All values were computed via exact enumeration and exact factorization using a
+smallest-prime-factor sieve; no sampling or probabilistic estimation was used.
+
+\subsection{Convergence table}
+
+Table~\ref{tab:convergence} records \(P(N,\theta_0)\) for
+\(\theta_0 \in \{0.20,\,0.25,\,0.30,\,0.35\}\ \) and
+\(N \in \{10^4,\,10^5,\,10^6,\,10^7,\,10^8\}\).
+
+\begin{table}[h]
+\centering
+\caption{Proportion \(P(N,\theta_0)\) of semiprimes \(n \leq N\) satisfying
+  \(\theta \leq \theta_0\).  All values in percent.}
+\label{tab:convergence}
+\begin{tabular}{rcccc}
+\toprule
+\(N\) & \(\theta_0 = 0.20\) & \(\theta_0 = 0.25\) & \(\theta_0 = 0.30\) & \(\theta_0 = 0.35\) \\
+\midrule
+\(10^4\) & 49.52 & 59.28 & 67.73 & 76.46 \\
+\(10^5\) & 51.93 & 60.77 & 69.40 & 77.27 \\
+\(10^6\) & 53.55 & 62.47 & 70.51 & 78.39 \\
+\(10^7\) & 55.53 & 63.74 & 71.83 & 79.19 \\
+\(10^8\) & 56.29 & 64.95 & 72.74 & 79.95 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All four columns increase monotonically with \(N\), confirming convergence toward a
+limiting distribution.  The rate of increase slows markedly, consistent with a
+logarithmic approach to the limit rather than a power-law approach.
+
+\subsection{Theta and factor ratio}
+
+Figure~\ref{fig:scatter} shows the joint distribution of \(\theta\) and
+\(\log(p/q)\) for all semiprimes \(n \leq 10^6\).  The scatter lies exactly on the
+one-parameter family of lines \(\log(p/q) = (2\theta-1)\log n\) (identity
+\eqref{eq:identity}), confirming that \(\theta\) fully determines the factor ratio once
+\(n\) is fixed.  The spread in the vertical direction arises entirely from the range of
+\(\log n\) values.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\textwidth]{theta_vs_logratio.png}
+\caption{Factor-ratio $\log(p/q)$ versus $\theta$ for all semiprimes $n \leq 10^6$
+  (30\,000 sampled points shown; colour encodes $\log n$).
+  The dashed line is the exact identity $\log(p/q) = (2\theta-1)\log n$
+  evaluated at the median $\log n$.}
+\label{fig:scatter}
+\end{figure}
+
+\subsection{Local linear approximation to the deficit}
+
+Define the deficit \(\delta(N,\theta_0) = 1 - P(N,\theta_0)\).  Table~\ref{tab:convergence}
+shows that \(\delta\) decreases with \(N\), but very slowly: at \(\theta_0 = 0.25\) the
+deficit falls only from \(40.72\%\) to \(35.05\%\) as \(N\) grows by four orders of
+magnitude.
+
+\paragraph{Theoretical rate.}
+The asymptotic rate of convergence is \(O(1/\!\log\log N)\), arising from the
+\(\log\log N\) accumulation of small prime contributions in semiprime counting
+(Montgomery--Vaughan \cite{montgomery2007}, \S7.4).  Over our observed range,
+\(\log\log N\) increases from \(2.22\) (at \(N = 10^4\)) to only \(2.91\) (at
+\(N = 10^8\)) — a total variation of \(0.69\) across four decades.  This near-constancy
+means that \(1/\!\log\log N\) behaves almost linearly in \(\log N\) within this window,
+making the two functional forms indistinguishable from the data alone.
+
+\paragraph{Local linear fit.}
+Within the observed range, a linear regression in \(\log N\) therefore provides an
+accurate \emph{local} description:
+\begin{equation}\label{eq:model}
+  \delta(N,\theta_0) \;\approx\; a(\theta_0) - b(\theta_0)\,\log N
+  \qquad \text{(empirical fit, } N \in [10^4, 10^8]\text{)}.
+\end{equation}
+This is not an asymptotic law: extrapolating \eqref{eq:model} to large \(N\) would
+predict \(\delta < 0\), which is impossible.  It is a finite-range proxy for the
+slower \(O(1/\!\log\log N)\) decay.  Numerical comparison confirms that the linear fit
+(mean \(R^2 = 0.989\) across four thresholds) outperforms a direct \(c/\!\log\log N\)
+fit (mean \(R^2 = 0.41\)) precisely because the variation of \(\log\log N\) is too
+small in this window to distinguish the two forms; the linear model has more
+flexibility with its two free parameters.
+
+Table~\ref{tab:fit} records the regression parameters for each \(\theta_0\).
+
+\begin{table}[h]
+\centering
+\caption{Parameters of the local linear fit \(\delta \approx a(\theta_0) - b(\theta_0)\log N\)
+  over \(N \in [10^4, 10^8]\) (\(R^2 > 0.97\) in all cases).  This fit is a
+  finite-range proxy for the theoretically predicted \(O(1/\!\log\log N)\) decay;
+  it is not valid outside the observed range.}
+\label{tab:fit}
+\begin{tabular}{cccr}
+\toprule
+\(\theta_0\) & \(a(\theta_0)\) & \(b(\theta_0)\) & \(R^2\) \\
+\midrule
+0.20 & 0.5692 & 0.007444 & 0.9754 \\
+0.25 & 0.4635 & 0.006216 & 0.9955 \\
+0.30 & 0.3702 & 0.005402 & 0.9904 \\
+0.35 & 0.2709 & 0.003866 & 0.9954 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The rate \(b(\theta_0)\) varies with \(\theta_0\) and is analyzed further in
+Section~\ref{sec:bscaling}.
+
+\subsection{Scaling of the convergence rate \texorpdfstring{$b(\theta_0)$}{b(theta)}}
+\label{sec:bscaling}
+
+The empirical rate \(b(\theta_0)\) from Table~\ref{tab:fit} decreases as \(\theta_0\)
+increases, meaning that a larger imbalance threshold corresponds to a faster-decreasing
+deficit within the observed range.  We fit two parametric curves to the four data points
+as \emph{descriptive regressions}, not theoretical predictions:
+
+\paragraph{Model~1 (empirical).}
+\[
+  b(\theta_0) \approx k\,(1-\theta_0)^{\alpha},
+  \qquad k \approx 0.01504,\quad \alpha \approx 3.056,\quad R^2 = 0.974.
+\]
+
+\paragraph{Model~2 (empirical).}
+\[
+  b(\theta_0) \approx \frac{c}{\theta_0^{\,\gamma}},
+  \qquad c \approx 1.300\times 10^{-3},\quad \gamma \approx 1.109,\quad R^2 = 0.938.
+\]
+
+Model~1 fits the four data points more closely (\(R^2 = 0.974\) vs.\ \(0.938\)).
+Both forms predict \(b \to 0\) as \(\theta_0 \to \tfrac{1}{2}\), qualitatively
+consistent with the known scarcity of nearly balanced semiprimes.
+\emph{Caution}: these regressions are fit to only four values of \(\theta_0\) and
+should be understood as summaries of the observed behavior, not as laws with theoretical
+backing.  Extending the table to additional \(\theta_0\) values and larger \(N\) would
+be needed to discriminate between functional forms.
+
+\subsection{Refined heuristic for the prefactor}
+\label{sec:corrected}
+
+The naive Mertens argument gives a leading prefactor of $\log(1/\theta_0)$ for the
+$O(1/\!\log\log N)$ deficit.  We develop a \emph{second-order heuristic} — not a
+proven asymptotic — that accounts for the next-order term in the prime sum and is
+consistent with the data substantially better across the range $\theta_0\in[0.10,0.45]$.
+
+\paragraph{Expansion of $1/\log(N/p)$.}
+Applying $\pi(x)\approx x/\log x$ to $L(N,\theta_0)$ yields terms $N/(p\log(N/p))$.
+Writing $\log(N/p)=\log N - \log p$ and expanding:
+\[
+  \frac{1}{\log(N/p)}
+  = \frac{1}{\log N}\cdot\frac{1}{1-\tfrac{\log p}{\log N}}
+  = \frac{1}{\log N}\!\left(1 + \frac{\log p}{\log N}
+    + O\!\left(\frac{\log^2\!p}{\log^2\!N}\right)\right).
+\]
+Summing the first correction term over primes via Chebyshev's theorem,
+$\sum_{p\leq x}(\log p)/p = \log x + O(1)$, produces an additive shift of
+$(\log x)/\log N$ in each counting sum, evaluated at its respective cutoff.
+
+\paragraph{Heuristic sums.}
+Define
+\[
+  T(N) = \!\sum_{p\leq\sqrt{N}}\!\bigl(\pi(N/p) - \pi(p-1)\bigr), \qquad
+  L(N,\theta_0) = \!\sum_{p\leq N^{\theta_0}}\!\bigl(\pi(N/p) - \pi(p-1)\bigr).
+\]
+Retaining the first correction gives the heuristic approximations
+\begin{align*}
+  T(N) &\;\approx\; \frac{N}{\log N}\!\left[\log\log N - \log 2 + M + \tfrac{1}{2}\right], \\[4pt]
+  L(N,\theta_0) &\;\approx\; \frac{N}{\log N}\!\left[\log\log N + \log\theta_0 + M + \theta_0\right],
+\end{align*}
+where $M\approx 0.2615$ is the Meissel--Mertens constant.  The terms $\tfrac{1}{2}$
+and $\theta_0$ arise from Chebyshev's theorem at the cutoffs $\sqrt{N}$ and $N^{\theta_0}$
+respectively.  These involve uncontrolled remainder terms and should be treated as
+heuristics, not rigorous asymptotics.
+
+\paragraph{Refined prefactor.}
+Forming $\delta = 1 - L/T$ from these heuristic sums gives the deficit as
+\emph{well approximated by}
+\begin{equation}\label{eq:prefactor}
+  \delta(N,\theta_0) \;\approx\;
+  \frac{f(\theta_0)}{\log\log N + c},
+\end{equation}
+where $c = -\log 2 + M + \tfrac{1}{2} \approx 0.07$ and
+\begin{equation}\label{eq:f}
+  f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + \tfrac{1}{2}.
+\end{equation}
+We do not claim \eqref{eq:f} is the proven asymptotic prefactor; it is the output of a
+second-order heuristic that is consistent with the data to within 20\% across the
+range tested.  The residual 20\% gap motivates the following formal statement.
+
+\begin{conjecture}\label{conj:prefactor}
+The limit $\lim_{N\to\infty}\delta(N,\theta_0)\cdot\log\log N$ exists and equals a
+function $f(\theta_0)$ satisfying
+\[
+  f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + C
+\]
+for a universal constant $C$ (independent of $\theta_0$).  Empirically, $C \approx
+\tfrac{1}{2}$ is consistent with the data across $\theta_0 \in [0.10,\,0.45]$.
+\end{conjecture}
+
+The value $C = \tfrac{1}{2}$ arises in the heuristic from Chebyshev's sum at the
+cutoff $\sqrt{N}$ of $T(N)$; whether it is exact in the asymptotic sense is not
+established by the present data.
+
+\paragraph{Numerical comparison.}
+Table~\ref{tab:prefactor} compares the naive prefactor $\log(1/\theta_0)$, the
+heuristic $f(\theta_0)$, and the empirical $b_{\mathrm{eff}} = \delta\cdot\log\log N$
+averaged over $N\in[10^4,10^8]$.
+
+\begin{table}[h]
+\centering
+\caption{Empirical $b_{\mathrm{eff}}$ (mean of $\delta\cdot\log\log N$ over
+  $N\in[10^4,10^8]$) vs.\ the naive prefactor $\log(1/\theta_0)$ and the heuristic
+  $f(\theta_0)=\log(1/\theta_0)-\theta_0-\log 2+\tfrac{1}{2}$ (Conjecture~\ref{conj:prefactor}).}
+\label{tab:prefactor}
+\begin{tabular}{cccccc}
+\toprule
+$\theta_0$ & $\log(1/\theta_0)$ & $f(\theta_0)$ & $b_{\mathrm{eff}}$
+           & $b_{\mathrm{eff}}/\log(1/\theta_0)$ & $b_{\mathrm{eff}}/f(\theta_0)$ \\
+\midrule
+0.10 & 2.303 & 2.009 & 1.819 & 0.790 & 0.905 \\
+0.15 & 1.897 & 1.554 & 1.465 & 0.772 & 0.943 \\
+0.20 & 1.609 & 1.216 & 1.205 & 0.749 & 0.991 \\
+0.25 & 1.386 & 0.943 & 0.976 & 0.704 & 1.034 \\
+0.30 & 1.204 & 0.711 & 0.763 & 0.634 & 1.074 \\
+0.35 & 1.050 & 0.507 & 0.562 & 0.535 & 1.108 \\
+0.40 & 0.916 & 0.323 & 0.373 & 0.407 & 1.154 \\
+0.45 & 0.799 & 0.155 & 0.187 & 0.234 & 1.202 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The heuristic is consistent with reducing the maximum relative error from $4.3\times$
+(naive) to under $1.21\times$ across all eight thresholds.  The remaining monotone
+trend in $b_{\mathrm{eff}}/f(\theta_0)$ (from $0.90$ to $1.20$) suggests further
+subleading structure, partly addressed in the next paragraph.
+
+\paragraph{Discrete activation thresholds (empirical observation).}
+A separately observable feature of the convergence is the presence of discrete steps
+in $P(N,\theta_0)$.  A prime $p$ begins contributing to $L(N,\theta_0)$ only at
+$N = p^{1/\theta_0}$, at which point the number of valid lopsided pairs $(p,q)$ with
+$n = pq \leq N$ increases by a finite amount.  These \emph{activation thresholds}
+produce step-like upward jumps in $L$ (and hence in $P$) at each $N = p^{1/\theta_0}$.
+
+For small $\theta_0$ the thresholds are widely spaced and large.  At $\theta_0=0.10$,
+the primes $2,3,5,7$ activate at $N = 2^{10} = 1\,024$,\; $3^{10}\approx 59\,000$,\;
+$5^{10}\approx 9.8\times 10^6$,\; $7^{10}\approx 2.8\times 10^8$.  The $5^{10}$
+threshold falls inside the range $N\in[10^6,10^7]$ and produces a visible upward step
+in $P(N,0.10)$ between those values, creating the non-monotone behaviour in
+$b_{\mathrm{eff}}$ at $\theta_0\in\{0.10,0.15\}$ visible in Table~\ref{tab:prefactor}.
+
+This discrete-threshold mechanism is a genuinely novel empirical observation: the
+convergence of $P(N,\theta_0)$ is not smooth in $N$ but proceeds in steps indexed
+by the prime activation sequence $\{p^{1/\theta_0}\}$.  It also explains why
+smooth models for the deficit perform less well at small $\theta_0$ over this range.
+
+\section{Geometric and Spectral Tests}
+
+We tested several candidate embeddings:
+\begin{itemize}
+  \item Additive phase wrapping: \(\phi_t(n) = t\log n \bmod 2\pi\)
+  \item Multiplicative phase maps using \(n^{it}\)
+  \item Spectral fingerprint \(C(t) = \bigl|\sum e^{it\log n}\bigr|\,/\,N\)
+  \item Factor-ratio spectrum \(C_{\mathrm{ratio}}(t) = \bigl|\sum e^{it\log(p/q)}\bigr|\,/\,N\)
+\end{itemize}
+
+Localization was assessed by examining stability under variation of \(N\) and clustering
+by \(\theta\).  No stable localization was observed.
+
+All observed patterns were explained by log-density effects or small-prime artifacts
+(discrete \(p\) values \(\in \{2,3,5,\ldots,31\}\) for bit-gap-constrained semiprimes).
+None of the embeddings captured factor asymmetry.
+
+\section{Results}
+
+\subsection{Summary of empirical findings}
+
+For fixed \(\theta_0 \in (0, \tfrac{1}{2})\), the following is established empirically:
+\begin{enumerate}
+  \item \(P(N,\theta_0)\) increases monotonically with \(N\) for all four tested thresholds.
+  \item The increase is extremely slow: over four decades of \(N\), the gain is at most
+    \(6.8\%\) (at \(\theta_0 = 0.20\)), compared with the \(\sim 50\%\) gap that remains
+    at \(N = 10^8\).
+  \item Within the observed range, the deficit \(\delta(N,\theta_0) = 1 - P(N,\theta_0)\)
+    decreases at a rate well approximated by a constant per unit \(\log N\), with rate
+    \(b(\theta_0)\) as tabulated in Table~\ref{tab:fit}.
+\end{enumerate}
+
+\subsection{Interpretation and connection to known theory}
+
+The extremely slow convergence is qualitatively consistent with what analytic number theory
+predicts for ratio-constrained semiprimes.  The density of semiprimes \(n = pq \leq N\)
+with \(p \leq N^{u}\) for fixed \(u < \tfrac{1}{2}\) is governed by sums of the form
+\(\sum_{p \leq N^u} \pi(N/p)\), where \(\pi\) is the prime counting function.  Standard
+sieve estimates (see Hildebrand--Tenenbaum \cite{hildebrand1993} and
+Tenenbaum \cite{tenenbaum1995}) show that such sums accumulate logarithmic corrections
+involving factors of \(\log\log N / \log N\), producing convergence that is invisible
+over a few decades but genuine asymptotically.
+
+The local linear fit \eqref{eq:model} captures the dominant behavior in the observed
+range \([10^4, 10^8]\), but it is a finite-range approximation: the true deficit decays
+to zero more slowly than any fixed linear function of \(\log N\) would predict, and
+the functional form of \(P_\infty(\theta_0)\) is not determined by our data.  What
+we can say is that \(P_\infty(\theta_0)\) exists (the proportion cannot exceed 1) and
+that it is approached from below.
+
+\subsection{The \(\theta\) coordinate}
+
+The exact identity \(\log(p/q) = (2\theta-1)\log n\) (equation~\eqref{eq:identity})
+shows that \(\theta\) and \(\log n\) together determine the factor ratio with no residual
+freedom.  This makes \(\theta\) a natural coordinate: it separates the role of the
+factor imbalance (encoded in \(\theta\)) from the role of the magnitude of \(n\)
+(encoded in \(\log n\)).  The observed convergence is therefore a statement about how
+the distribution of \(\theta\) across semiprimes \(n \leq N\) evolves as \(N\) grows,
+which is a well-posed and nontrivial question even if its full resolution requires
+deeper sieve-theoretic tools.
+
+\section{Conclusion}
+
+Semiprime factor structure is not captured by the class of additive, multiplicative, and
+spectral embeddings considered here.  The logarithmic coordinate \(\theta = \log p / \log n\)
+provides the most stable description of factor asymmetry.
+
+The rate of convergence is consistent with \(O(1/\!\log\log N)\), as predicted by the
+\(\log\log N\) accumulation of small prime contributions in semiprime counting
+(Montgomery--Vaughan \cite{montgomery2007}, \S7.4).  The local linear-in-\(\log N\)
+approximation of Section~3.3 is a valid finite-range description of this slower decay:
+over \(N \in [10^4, 10^8]\), \(\log\log N\) varies by only \(0.69\), so the two
+functional forms are numerically indistinguishable in this window.
+
+The novel contributions are: (1)~empirical quantification of the convergence rate
+$b(\theta_0)$ across four imbalance thresholds, suggesting it decreases smoothly with
+$\theta_0$; (2)~the geometric and spectral null results, consistent with the
+$\theta$ coordinate being unrecoverable from the embeddings tested; (3)~a second-order
+heuristic for the prefactor $f(\theta_0) = \log(1/\theta_0) - \theta_0 - \log 2 +
+\tfrac{1}{2}$ (Conjecture~\ref{conj:prefactor}, Section~\ref{sec:corrected}),
+consistent with reducing the naive-Mertens prediction error from $4.3\times$ to
+under $1.21\times$ by accounting for the asymmetric Chebyshev sums at the cutoffs
+$\sqrt{N}$ and $N^{\theta_0}$; and (4)~the empirical observation that $P(N,\theta_0)$
+increases in discrete steps at $N = p^{1/\theta_0}$ for each prime $p$ (activation
+thresholds), which is a genuinely novel structural feature of the convergence not
+captured by smooth asymptotic models.
+Proving Conjecture~\ref{conj:prefactor} and determining $P_\infty(\theta_0)$
+rigorously remain open problems accessible to sieve-theoretic methods.
+
+The negative results on geometric and spectral embeddings suggest that the logarithmic
+coordinate is not merely convenient but is in some sense the correct one for this problem.
+
+\begin{thebibliography}{9}
+
+\bibitem{dickman1930}
+K.~Dickman,
+``On the frequency of numbers containing prime factors of a certain relative
+  magnitude,''
+\textit{Arkiv f\"{o}r Matematik, Astronomi och Fysik},
+vol.~22A, no.~10, 1930.
+
+\bibitem{hildebrand1993}
+A.~Hildebrand and G.~Tenenbaum,
+``Integers without large prime factors,''
+\textit{Journal de Th\'{e}orie des Nombres de Bordeaux},
+vol.~5, pp.~411--484, 1993.
+
+\bibitem{tenenbaum1995}
+G.~Tenenbaum,
+\textit{Introduction to Analytic and Probabilistic Number Theory},
+Cambridge University Press, 1995.
+
+\bibitem{erdos1979}
+P.~Erd\H{o}s and C.~Pomerance,
+``On the distribution of smooth numbers,''
+in \textit{Number Theory, Carbondale 1979}, Lecture Notes in Math.\ 751,
+Springer, Berlin, 1979, pp.~173--183.
+
+\bibitem{halberstam1974}
+H.~Halberstam and H.-E.~Richert,
+\textit{Sieve Methods},
+Academic Press, London, 1974.
+
+\bibitem{montgomery2007}
+H.~L.~Montgomery and R.~C.~Vaughan,
+\textit{Multiplicative Number Theory~I: Classical Theory},
+Cambridge Studies in Advanced Mathematics~97,
+Cambridge University Press, 2007.
+
+\end{thebibliography}
+
+\end{document}
