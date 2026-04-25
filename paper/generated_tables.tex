@@ -1,0 +1,62 @@
+
+\begin{table}[htbp]
+\centering
+\caption{Proportion \(P(N,\theta_0)\) of semiprimes \(n \leq N\) satisfying
+\(\theta \leq \theta_0\). All values are percentages.}
+\label{tab:convergence}
+\begin{tabular}{rcccc}
+\toprule
+\(N\) & \(\theta_0 = 0.20\) & \(\theta_0 = 0.25\) & \(\theta_0 = 0.30\) & \(\theta_0 = 0.35\) \\
+\midrule
+
+\(10^4\) & 49.52 & 59.28 & 67.73 & 76.46 \\
+\(10^5\) & 51.93 & 60.77 & 69.40 & 77.27 \\
+\(10^6\) & 53.55 & 62.47 & 70.51 & 78.39 \\
+\(10^7\) & 55.53 & 63.74 & 71.83 & 79.19 \\
+\(10^8\) & 56.29 & 64.95 & 72.74 & 79.95 \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[htbp]
+\centering
+\caption{Parameters of the local linear fit
+\(\delta \approx a(\theta_0)-b(\theta_0)\log N\) over \(N\in[10^4,10^8]\).}
+\label{tab:fit}
+\begin{tabular}{cccc}
+\toprule
+\(\theta_0\) & \(a(\theta_0)\) & \(b(\theta_0)\) & \(R^2\) \\
+\midrule
+
+0.20 & 0.5692 & 0.007444 & 0.9754 \\
+0.25 & 0.4634 & 0.006215 & 0.9955 \\
+0.30 & 0.3703 & 0.005407 & 0.9903 \\
+0.35 & 0.2709 & 0.003865 & 0.9954 \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[htbp]
+\centering
+\caption{Empirical \(b_{\mathrm{eff}}\) vs. heuristic prefactors.}
+\label{tab:prefactor}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{cccccc}
+\toprule
+\(\theta_0\) & \(\log(1/\theta_0)\) & \(f(\theta_0)\) & \(b_{\mathrm{eff}}\)
+& \(b_{\mathrm{eff}}/\log(1/\theta_0)\) & \(b_{\mathrm{eff}}/f(\theta_0)\) \\
+\midrule
+
+0.20 & 1.609 & 1.216 & 1.205 & 0.749 & 0.991 \\
+0.25 & 1.386 & 0.943 & 0.975 & 0.704 & 1.034 \\
+0.30 & 1.204 & 0.711 & 0.763 & 0.634 & 1.074 \\
+0.35 & 1.050 & 0.507 & 0.562 & 0.535 & 1.108 \\
+
+\bottomrule
+\end{tabular}%
+}
+\end{table}
