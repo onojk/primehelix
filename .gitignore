@@ -68,6 +68,13 @@ tenenbaum_snippets/
 !figures/*.png
 
 # =========================
+# Allow paper results
+# =========================
+!results/
+!results/*.csv
+!stabilisation_extended.png
+
+# =========================
 # Allow specific important scripts (optional)
 # =========================
 !activation_steps.py
