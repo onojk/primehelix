@@ -524,10 +524,10 @@ for this normalized coordinate.
 \subsection*{Roadmap to a proof}
 Proving Conjecture~\ref{conj:prefactor} would require:
 \begin{itemize}
-  \item Uniform error bounds in the prime number theorem for \(\pi(N/p)\) when
-        \(p\) ranges up to \(N^{\theta_0}\); this is a known result from the
-        Siegel--Walfisz theorem for primes in arithmetic progressions, but here
-        uniformity in the modulus (the denominator \(p\)) is delicate.
+  \item Uniform error bounds for \(\pi(N/p)\) as \(p\) ranges over
+        primes up to \(N^{\theta_0}\): specifically, a version of the
+        prime number theorem with a remainder that is uniform in the
+        ratio \(N/p\) as \(p\) varies and \(\theta_0\) is bounded away from \(0\).
   \item A refined estimate for the moving sum
         \(\sum_{p\le N^{\theta_0}} \frac{1}{p\log(N/p)}\),
         which essentially requires the Mertens theorem with a remainder that is
@@ -610,6 +610,17 @@ can capture.  The subleading correction structure remains open.
 bound applies only for \(\theta_0 \in [0.10, 0.45]\) and should not be extrapolated.
 \end{remark}
 
+\begin{figure}[h]\centering
+\includegraphics[width=0.7\textwidth]{residual_plot.png}
+\caption{Residuals \(r(\theta_0) = b_{\rm eff}(\theta_0) -
+f(\theta_0)\) vs.\ \(\theta_0\). The sign change near
+\(\theta_0 \approx 0.20\) (negative for small \(\theta_0\),
+positive for large) means no single monotone predictor
+can capture the full correction; the subleading structure
+remains open.}
+\label{fig:residuals}
+\end{figure}
+
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.80\textwidth]{stabilisation_extended.png}
@@ -676,21 +687,17 @@ between the two factorizations of a semiprime; it sees only the product.  The
 coordinate \(\theta\), by contrast, depends explicitly on the factorization through
 \(\log p / \log n\).
 
-\subsection{Stronger separation principle}
+\subsection{Why embeddings of \(n\) alone fail}
 \label{sec:separation}
 
-\begin{conjecture}[Separation principle]
-Let \(\phi:\mathbb{N}\to\mathbb{R}\) be any function that depends only on the multiset
-of prime factors of \(n\) in a symmetric way.  Then \(\phi(n)\) does not determine
-\(\theta = \log p/\log n\) for a positive-density subsequence of semiprimes.
-\end{conjecture}
-
-A proof sketch: for a given \(n = pq\) with \(p < q\), there is no second
-factorisation, but \(\phi(n) = \phi(q \cdot p)\) gives the same value regardless of
-ordering.  Any \(\phi\) that is insensitive to which of \(p, q\) is the smallest
-factor can at best determine \(\theta\) up to the reflection \(\theta \leftrightarrow 1-\theta\).
-For \(\theta < 1/2\) this reflection gives a different value; the ambiguity is inherent
-to any function that does not explicitly use \(\mathrm{spf}(n)\) or an equivalent.
+None of the embeddings tested recovered the structure carried by
+\(\theta\).  This is expected: every embedding tested depends only on
+\(n\) as an integer, without recovering its factorization.  Any such
+function sees only the product \(pq\), not which factor is smaller.
+The coordinate \(\theta = \log p / \log n\), by contrast, depends
+explicitly on \(\mathrm{spf}(n)\).  Recovering \(\theta\) from \(n\)
+therefore requires factorization, which none of the tested
+embeddings perform.
 
 % ── Section 7 ─────────────────────────────────────────────────────────────────
 

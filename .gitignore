@@ -81,6 +81,7 @@ media/
 !results/
 !results/*.csv
 !stabilisation_extended.png
+!paper/*.png
 
 # =========================
 # Allow specific important scripts (optional)
