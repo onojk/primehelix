@@ -1,9 +1,11 @@
 \documentclass[11pt]{article}
 \usepackage{amsmath, amssymb}
+\usepackage{amsthm}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage[margin=1in]{geometry}
+\newtheorem{conjecture}{Conjecture}
 \title{On the Distribution of Smaller Factors in Semiprimes}
 \author{Jonathan Kendall}
 \date{April 24, 2026}
@@ -22,15 +24,17 @@ The deficit \(\delta(N,\theta_0) = P_\infty(\theta_0) - P(N,\theta_0)\) remains
 substantial even at \(N = 10^8\), consistent with \(O(1/\!\log\log N)\) decay arising
 from the \(\log\log N\) accumulation of small prime contributions
 (Montgomery--Vaughan \cite{montgomery2007}, \S7.4).
-A Chebyshev-corrected analysis of the counting sum
-$\sum_{p \leq N^{\theta_0}} \pi(N/p)$ yields the refined prefactor
+A second-order heuristic applied to the counting sum
+$\sum_{p \leq N^{\theta_0}} \pi(N/p)$ (Section~\ref{sec:corrected}) suggests the
+refined prefactor
 \[
   f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + \tfrac{1}{2},
 \]
-which reduces the relative error in predicting
+which is consistent with reducing the relative prediction error for
 $b_{\mathrm{eff}} = \delta\cdot\log\log N$ from up to \(4.3\times\) (naive Mertens)
-to under \(1.21\times\) across eight thresholds
-\(\theta_0 \in \{0.10,\ldots,0.45\}\) (Section~\ref{sec:corrected}).
+to under \(1.21\times\) across eight thresholds \(\theta_0\in\{0.10,\ldots,0.45\}\);
+whether $C = \tfrac{1}{2}$ is the exact asymptotic constant remains open
+(Conjecture~\ref{conj:prefactor}).
 Over the observed range \(N \in [10^4, 10^8]\), \(\log\log N\) varies only from
 \(2.22\) to \(2.91\), a range too narrow to distinguish \(1/\!\log\log N\) decay from
 a local linear fit in \(\log N\).  Accordingly, the deficit is well approximated
@@ -247,72 +251,82 @@ should be understood as summaries of the observed behavior, not as laws with the
 backing.  Extending the table to additional \(\theta_0\) values and larger \(N\) would
 be needed to discriminate between functional forms.
 
-\subsection{Corrected prefactor via Chebyshev's prime sum theorem}
+\subsection{Refined heuristic for the prefactor}
 \label{sec:corrected}
 
-The naive application of Mertens' theorem to the semiprime counting sum predicts a
-leading prefactor of $\log(1/\theta_0)$ in the $O(1/\!\log\log N)$ deficit.  We
-derive a sharper formula using Chebyshev's prime sum theorem.
+The naive Mertens argument gives a leading prefactor of $\log(1/\theta_0)$ for the
+$O(1/\!\log\log N)$ deficit.  We develop a \emph{second-order heuristic} — not a
+proven asymptotic — that accounts for the next-order term in the prime sum and is
+consistent with the data substantially better across the range $\theta_0\in[0.10,0.45]$.
 
-\paragraph{Setup.}
+\paragraph{Expansion of $1/\log(N/p)$.}
+Applying $\pi(x)\approx x/\log x$ to $L(N,\theta_0)$ yields terms $N/(p\log(N/p))$.
+Writing $\log(N/p)=\log N - \log p$ and expanding:
+\[
+  \frac{1}{\log(N/p)}
+  = \frac{1}{\log N}\cdot\frac{1}{1-\tfrac{\log p}{\log N}}
+  = \frac{1}{\log N}\!\left(1 + \frac{\log p}{\log N}
+    + O\!\left(\frac{\log^2\!p}{\log^2\!N}\right)\right).
+\]
+Summing the first correction term over primes via Chebyshev's theorem,
+$\sum_{p\leq x}(\log p)/p = \log x + O(1)$, produces an additive shift of
+$(\log x)/\log N$ in each counting sum, evaluated at its respective cutoff.
+
+\paragraph{Heuristic sums.}
 Define
 \[
   T(N) = \!\sum_{p\leq\sqrt{N}}\!\bigl(\pi(N/p) - \pi(p-1)\bigr), \qquad
-  L(N,\theta_0) = \!\sum_{p\leq N^{\theta_0}}\!\bigl(\pi(N/p) - \pi(p-1)\bigr),
+  L(N,\theta_0) = \!\sum_{p\leq N^{\theta_0}}\!\bigl(\pi(N/p) - \pi(p-1)\bigr).
 \]
-so that $P(N,\theta_0) = L(N,\theta_0)/T(N)$ and
-$\delta = 1 - L/T = (T - L)/T$.
-
-\paragraph{Naive approximation.}
-Replacing $\pi(x) \approx x/\log x$ and approximating $\log(N/p) \approx \log N$ gives
-$\sum_{p\leq x} N/(p\log N) \approx (N/\log N)\log\log x$ via Mertens' theorem, and hence
-\[
-  \delta \;\approx\; \frac{\log(1/\theta_0)}{\log\log N}.
-\]
-
-\paragraph{Chebyshev correction.}
-The step $\log(N/p)\approx\log N$ discards $\log p$.  The correction is captured by
-Chebyshev's theorem
-\[
-  \sum_{p \leq x}\frac{\log p}{p} = \log x + O(1).
-\]
-Expanding $N/\bigl(p\log(N/p)\bigr) = (N/\log N)\cdot\bigl(1 - \log p/\log N\bigr)^{-1}$
-to first order and summing by Abel's method yields
-\[
-  \sum_{p\leq x}\frac{N}{p\log(N/p)}
-  \;\approx\; \frac{N}{\log N}\!\left[\log\log x + M + \frac{\log x}{\log N}\right],
-\]
-where $M\approx 0.2615$ is the Meissel--Mertens constant.
-The extra term $\log x/\log N$ equals $\tfrac{1}{2}$ when $x = \sqrt{N}$
-and $\theta_0$ when $x = N^{\theta_0}$.  Inserting these values:
+Retaining the first correction gives the heuristic approximations
 \begin{align*}
   T(N) &\;\approx\; \frac{N}{\log N}\!\left[\log\log N - \log 2 + M + \tfrac{1}{2}\right], \\[4pt]
-  L(N,\theta_0) &\;\approx\; \frac{N}{\log N}\!\left[\log\log N + \log\theta_0 + M + \theta_0\right].
+  L(N,\theta_0) &\;\approx\; \frac{N}{\log N}\!\left[\log\log N + \log\theta_0 + M + \theta_0\right],
 \end{align*}
+where $M\approx 0.2615$ is the Meissel--Mertens constant.  The terms $\tfrac{1}{2}$
+and $\theta_0$ arise from Chebyshev's theorem at the cutoffs $\sqrt{N}$ and $N^{\theta_0}$
+respectively.  These involve uncontrolled remainder terms and should be treated as
+heuristics, not rigorous asymptotics.
 
-\paragraph{Corrected prefactor.}
-Subtracting and dividing:
+\paragraph{Refined prefactor.}
+Forming $\delta = 1 - L/T$ from these heuristic sums gives the deficit as
+\emph{well approximated by}
 \begin{equation}\label{eq:prefactor}
   \delta(N,\theta_0) \;\approx\;
   \frac{f(\theta_0)}{\log\log N + c},
-  \qquad
-  \boxed{f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + \tfrac{1}{2}},
 \end{equation}
-where $c = -\log 2 + M + \tfrac{1}{2} \approx 0.07$ is a small positive constant.
-The corrected prefactor $f(\theta_0)$ replaces $\log(1/\theta_0)$ by accounting for
-the asymmetric Chebyshev contributions at the two cutoffs $\sqrt{N}$ and $N^{\theta_0}$.
+where $c = -\log 2 + M + \tfrac{1}{2} \approx 0.07$ and
+\begin{equation}\label{eq:f}
+  f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + \tfrac{1}{2}.
+\end{equation}
+We do not claim \eqref{eq:f} is the proven asymptotic prefactor; it is the output of a
+second-order heuristic that is consistent with the data to within 20\% across the
+range tested.  The residual 20\% gap motivates the following formal statement.
 
-\paragraph{Numerical validation.}
-Table~\ref{tab:prefactor} compares both prefactors against the empirically observed
-$b_{\mathrm{eff}} = \delta\cdot\log\log N$, averaged over $N\in[10^4,10^8]$.
-The corrected formula reduces the maximum relative error from $4.3\times$ (naive) to
-under $1.21\times$ (corrected) across all eight thresholds.
+\begin{conjecture}\label{conj:prefactor}
+The limit $\lim_{N\to\infty}\delta(N,\theta_0)\cdot\log\log N$ exists and equals a
+function $f(\theta_0)$ satisfying
+\[
+  f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + C
+\]
+for a universal constant $C$ (independent of $\theta_0$).  Empirically, $C \approx
+\tfrac{1}{2}$ is consistent with the data across $\theta_0 \in [0.10,\,0.45]$.
+\end{conjecture}
+
+The value $C = \tfrac{1}{2}$ arises in the heuristic from Chebyshev's sum at the
+cutoff $\sqrt{N}$ of $T(N)$; whether it is exact in the asymptotic sense is not
+established by the present data.
+
+\paragraph{Numerical comparison.}
+Table~\ref{tab:prefactor} compares the naive prefactor $\log(1/\theta_0)$, the
+heuristic $f(\theta_0)$, and the empirical $b_{\mathrm{eff}} = \delta\cdot\log\log N$
+averaged over $N\in[10^4,10^8]$.
 
 \begin{table}[h]
 \centering
 \caption{Empirical $b_{\mathrm{eff}}$ (mean of $\delta\cdot\log\log N$ over
-  $N\in[10^4,10^8]$) vs.\ naive prefactor $\log(1/\theta_0)$ and corrected prefactor
-  $f(\theta_0)=\log(1/\theta_0)-\theta_0-\log 2+\tfrac{1}{2}$.}
+  $N\in[10^4,10^8]$) vs.\ the naive prefactor $\log(1/\theta_0)$ and the heuristic
+  $f(\theta_0)=\log(1/\theta_0)-\theta_0-\log 2+\tfrac{1}{2}$ (Conjecture~\ref{conj:prefactor}).}
 \label{tab:prefactor}
 \begin{tabular}{cccccc}
 \toprule
@@ -331,12 +345,29 @@ $\theta_0$ & $\log(1/\theta_0)$ & $f(\theta_0)$ & $b_{\mathrm{eff}}$
 \end{tabular}
 \end{table}
 
-The residual monotone trend in $b_{\mathrm{eff}}/f(\theta_0)$ — from $0.90$ at
-$\theta_0=0.10$ to $1.20$ at $\theta_0=0.45$ — reflects two effects not captured
-at this order: (i)~discrete activation thresholds ($p$ contributes only when
-$N \geq p^{1/\theta_0}$, creating step-like jumps in $L$) and (ii)~the breakdown
-of $\log(N/p)\approx\log N$ when $p$ is not small relative to $N^{\theta_0}$.
-Both are subleading corrections of order $O(\theta_0/\!\log\log N)$.
+The heuristic is consistent with reducing the maximum relative error from $4.3\times$
+(naive) to under $1.21\times$ across all eight thresholds.  The remaining monotone
+trend in $b_{\mathrm{eff}}/f(\theta_0)$ (from $0.90$ to $1.20$) suggests further
+subleading structure, partly addressed in the next paragraph.
+
+\paragraph{Discrete activation thresholds (empirical observation).}
+A separately observable feature of the convergence is the presence of discrete steps
+in $P(N,\theta_0)$.  A prime $p$ begins contributing to $L(N,\theta_0)$ only at
+$N = p^{1/\theta_0}$, at which point the number of valid lopsided pairs $(p,q)$ with
+$n = pq \leq N$ increases by a finite amount.  These \emph{activation thresholds}
+produce step-like upward jumps in $L$ (and hence in $P$) at each $N = p^{1/\theta_0}$.
+
+For small $\theta_0$ the thresholds are widely spaced and large.  At $\theta_0=0.10$,
+the primes $2,3,5,7$ activate at $N = 2^{10} = 1\,024$,\; $3^{10}\approx 59\,000$,\;
+$5^{10}\approx 9.8\times 10^6$,\; $7^{10}\approx 2.8\times 10^8$.  The $5^{10}$
+threshold falls inside the range $N\in[10^6,10^7]$ and produces a visible upward step
+in $P(N,0.10)$ between those values, creating the non-monotone behaviour in
+$b_{\mathrm{eff}}$ at $\theta_0\in\{0.10,0.15\}$ visible in Table~\ref{tab:prefactor}.
+
+This discrete-threshold mechanism is a genuinely novel empirical observation: the
+convergence of $P(N,\theta_0)$ is not smooth in $N$ but proceeds in steps indexed
+by the prime activation sequence $\{p^{1/\theta_0}\}$.  It also explains why
+smooth models for the deficit perform less well at small $\theta_0$ over this range.
 
 \section{Geometric and Spectral Tests}
 
@@ -413,20 +444,19 @@ over \(N \in [10^4, 10^8]\), \(\log\log N\) varies by only \(0.69\), so the two
 functional forms are numerically indistinguishable in this window.
 
 The novel contributions are: (1)~empirical quantification of the convergence rate
-\(b(\theta_0)\) across four imbalance thresholds, showing it decreases smoothly with
-\(\theta_0\); (2)~the geometric and spectral null results, showing that the
-\(\theta\) coordinate is not recoverable from natural embeddings; and
-(3)~a Chebyshev-corrected prefactor formula
-\(f(\theta_0) = \log(1/\theta_0) - \theta_0 - \log 2 + \tfrac{1}{2}\)
-(Section~\ref{sec:corrected}), which substantially sharpens the naive Mertens
-prediction and identifies the dominant source of the prefactor gap as asymmetric
-Chebyshev sums at the two cutoffs $\sqrt{N}$ and $N^{\theta_0}$.
-The formula accounts for the observation that $T(N)$ sums to $\sqrt{N}$ (contributing
-$+\tfrac{1}{2}$ via Chebyshev) while $L(N,\theta_0)$ sums to $N^{\theta_0}$
-(contributing $+\theta_0$).
-Determining \(P_\infty(\theta_0)\) rigorously, and establishing the precise constant
-in \(O(1/\!\log\log N)\) including subleading terms, remain open problems accessible
-to sieve-theoretic methods.
+$b(\theta_0)$ across four imbalance thresholds, suggesting it decreases smoothly with
+$\theta_0$; (2)~the geometric and spectral null results, consistent with the
+$\theta$ coordinate being unrecoverable from the embeddings tested; (3)~a second-order
+heuristic for the prefactor $f(\theta_0) = \log(1/\theta_0) - \theta_0 - \log 2 +
+\tfrac{1}{2}$ (Conjecture~\ref{conj:prefactor}, Section~\ref{sec:corrected}),
+consistent with reducing the naive-Mertens prediction error from $4.3\times$ to
+under $1.21\times$ by accounting for the asymmetric Chebyshev sums at the cutoffs
+$\sqrt{N}$ and $N^{\theta_0}$; and (4)~the empirical observation that $P(N,\theta_0)$
+increases in discrete steps at $N = p^{1/\theta_0}$ for each prime $p$ (activation
+thresholds), which is a genuinely novel structural feature of the convergence not
+captured by smooth asymptotic models.
+Proving Conjecture~\ref{conj:prefactor} and determining $P_\infty(\theta_0)$
+rigorously remain open problems accessible to sieve-theoretic methods.
 
 The negative results on geometric and spectral embeddings suggest that the logarithmic
 coordinate is not merely convenient but is in some sense the correct one for this problem.
