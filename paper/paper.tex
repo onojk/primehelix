@@ -265,9 +265,11 @@ the range of \(\log n\) values.
 \centering
 \includegraphics[width=0.82\textwidth]{theta_vs_logratio.png}
 \caption{Factor-ratio \(\log(p/q)\) versus \(\theta\) for all semiprimes
-  \(n \leq 10^6\) (30\,000 sampled points shown; colour encodes \(\log n\)).
-  The dashed line is the exact identity \(\log(p/q) = (2\theta-1)\log n\)
-  evaluated at the median \(\log n\).}
+  \(n \leq 10^6\) (30\,000 sampled points; colour encodes \(\log n\)).
+  Thin grey lines show the exact identity \(\log(p/q)=(2\theta-1)\log n\)
+  at \(\log n \in \{8,10,12,14,16,18\}\); the dashed red line is at
+  the median \(\log n = 13.09\).  The scatter lies exactly on this
+  family, confirming identity~\eqref{eq:identity}.}
 \label{fig:scatter}
 \end{figure}
 
@@ -345,8 +347,9 @@ the observed window, a condition that fails when \(\theta_0\) is small.
 \subsection{Limiting Distribution: Concentration at Zero}
 \label{sec:limiting}
 
-The data and heuristic both indicate that for any fixed \(\theta_0\in(0,\tfrac12)\),
-\(\lim_{N\to\infty}P(N,\theta_0)=1\).  Thus the random variable \(\theta_N\) (for a
+The data and heuristic are consistent with
+\(\lim_{N\to\infty}P(N,\theta_0)=1\) for fixed
+\(\theta_0\in(0,\tfrac12)\), though this limit remains unproved.  Thus the random variable \(\theta_N\) (for a
 uniform random semiprime \(n\le N\)) satisfies \(\theta_N\to 0\) in probability.
 The limiting distribution is singular at \(0\), a behaviour consistent with the
 classical observation that the smallest prime factor of a random integer is typically
@@ -452,6 +455,8 @@ points as \emph{descriptive regressions}, not theoretical predictions:
 \]
 
 Model~1 fits the four data points more closely (\(R^2 = 0.974\) vs.\ \(0.938\)).
+We note that \(\alpha \approx 3.056\) is close to the integer \(3\); whether
+\(b(\theta_0) \propto (1-\theta_0)^3\) has a theoretical basis remains an open question.
 Both forms predict \(b \to 0\) as \(\theta_0 \to \tfrac{1}{2}\), qualitatively
 consistent with the known scarcity of nearly balanced semiprimes.
 \emph{Caution}: these regressions are fit to only four values of \(\theta_0\) and
