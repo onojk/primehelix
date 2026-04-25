@@ -1,0 +1,6 @@
+model,form,A,R2,max_abs_residual,R2_gt_097
+S1,A*theta0,0.059521,0.03481,0.196852,False
+S2,A*theta0^2,0.244153,0.09379,0.193342,False
+S3,A*theta0*log(1/th),0.007625,-0.01064,0.192656,False
+S4,A*(log2-theta0),-0.060783,0.0909,0.154847,False
+S5,A*f(theta0),-0.043226,0.32319,0.104041,False

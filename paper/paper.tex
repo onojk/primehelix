@@ -327,6 +327,21 @@ in the prime sum.
 \label{fig:jumps}
 \end{figure}
 
+\paragraph{Indicator decomposition.}
+The counting sum \(L(N,\theta_0)\) admits the decomposition
+\(L = \sum_p s_p(N)\cdot w_p(N)\), where
+\(s_p(N) = \mathbf{1}_{N \ge p^{1/\theta_0}}\) is a binary activation
+indicator and \(w_p(N) = \pi(N/p) - \pi(p-1)\) is the weight
+accumulated after activation.  This represents \(P(N,\theta_0)\) as
+an event-driven accumulation process indexed by primes, with
+activation times \(\{p^{1/\theta_0}\}\) forming an increasingly
+sparse sequence as \(p\) grows: the inter-activation spacing in
+\(\log N\) grows as \((\log p_{k+1} - \log p_k)/\theta_0 \sim
+\log p_k/\theta_0\) by the prime number theorem.  This sparsity
+explains why smooth asymptotic models underperform at small
+\(\theta_0\): the approximation requires many activations within
+the observed window, a condition that fails when \(\theta_0\) is small.
+
 \subsection{Limiting Distribution: Concentration at Zero}
 \label{sec:limiting}
 
@@ -576,16 +591,19 @@ the discrete activation thresholds which are most influential at small \(\theta_
 
 \paragraph{Subleading correction.}
 To test whether the monotone trend in \(b_{\mathrm{eff}}/f(\theta_0)\) is explained
-by a single subleading term, we fit six single-parameter models to the residuals
+by a single subleading term, we fit five single-parameter no-intercept models to the
+residuals
 \[
-  r(N,\theta_0) = \delta(N,\theta_0)\cdot\log\log N - f(\theta_0)
+  r(\theta_0) = b_{\mathrm{eff}}(\theta_0) - f(\theta_0)
 \]
-at \(N \in \{10^8,\, 2\times10^8,\, 5\times10^8,\, 10^9\}\) and
-\(\theta_0 \in [0.10,0.45]\).  Models tested: \(A\theta_0\), \(A\theta_0^2\),
-\(A\theta_0\log(1/\theta_0)\), \(A(\log 2 - \theta_0)\),
-\(A/\log\log N\), and \(A\cdot f(\theta_0)\).
-No model achieves \(R^2 > 0.97\) (best \(R^2 = 0.25\) for the \(A\theta_0\) form).
-The subleading correction structure remains open.
+using the eight values \(\theta_0 \in [0.10,0.45]\) from Table~\ref{tab:prefactor}.
+Models tested: \(A\theta_0\) (S1), \(A\theta_0^2\) (S2),
+\(A\theta_0\log(1/\theta_0)\) (S3), \(A(\log 2 - \theta_0)\) (S4), and
+\(A\cdot f(\theta_0)\) (S5).  The best-fitting model is S5 with
+\(A = -0.0432\) and \(R^2 = 0.32\); no model achieves \(R^2 > 0.97\).
+The residuals change sign near \(\theta_0 \approx 0.20\) (negative for small
+\(\theta_0\), positive for large), a pattern that no single monotone predictor
+can capture.  The subleading correction structure remains open.
 
 \begin{remark}
 \(f(\theta_0)\) approaches zero near \(\theta_0 \approx 0.47\); the \(1.21\times\)
