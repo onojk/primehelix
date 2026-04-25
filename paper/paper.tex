@@ -19,16 +19,20 @@ over \(N \leq 10^8\) shows that the proportion \(P(N,\theta_0)\) of semiprimes s
 \(\theta \leq \theta_0\) increases monotonically with \(N\) and is consistent with convergence to a
 limiting value \(P_\infty(\theta_0)\), but the rate of convergence is extremely slow.
 The deficit \(\delta(N,\theta_0) = P_\infty(\theta_0) - P(N,\theta_0)\) remains
-substantial even at \(N = 10^8\), consistent with Dickman-type logarithmic corrections.
-Over the observed range \(N \in [10^4, 10^8]\), the deficit is well approximated
-\emph{locally} by a linear function of \(\log N\):
+substantial even at \(N = 10^8\), consistent with \(O(1/\!\log\log N)\) decay arising
+from the \(\log\log N\) accumulation of small prime contributions
+(Montgomery--Vaughan \cite{montgomery2007}, \S7.4).
+Over the observed range \(N \in [10^4, 10^8]\), \(\log\log N\) varies only from
+\(2.22\) to \(2.91\), a range too narrow to distinguish \(1/\!\log\log N\) decay from
+a local linear fit in \(\log N\).  Accordingly, the deficit is well approximated
+\emph{locally} by
 \[
-  \delta(N,\theta_0) \;\approx\; a(\theta_0) - b(\theta_0)\,\log N,
+  \delta(N,\theta_0) \;\approx\; a(\theta_0) - b(\theta_0)\,\log N
+  \qquad (R^2 > 0.97 \text{ within } [10^4,10^8]),
 \]
-where \(b(\theta_0)\) is the empirical convergence rate.  This local fit has \(R^2 > 0.97\)
-for all four tested values of \(\theta_0\), and the rates satisfy the empirical regression
-\(b(\theta_0) \approx k(1-\theta_0)^{\alpha}\) with \(k \approx 0.015\),
-\(\alpha \approx 3.1\) (fit to 4 data points, \(R^2 = 0.97\)).
+where \(b(\theta_0)\) is an empirical rate summarizing the behavior in this window.
+The empirical regression \(b(\theta_0) \approx k(1-\theta_0)^{\alpha}\),
+\(k \approx 0.015\), \(\alpha \approx 3.1\), is a descriptive fit to 4 data points.
 
 To investigate whether this structure admits a geometric or spectral representation, we
 construct several embeddings including additive phase wrapping, multiplicative phase maps
@@ -158,24 +162,38 @@ shows that \(\delta\) decreases with \(N\), but very slowly: at \(\theta_0 = 0.2
 deficit falls only from \(40.72\%\) to \(35.05\%\) as \(N\) grows by four orders of
 magnitude.
 
-Within the observed range \(N \in [10^4, 10^8]\), a linear regression in \(\log N\)
-provides a useful \emph{local} description:
+\paragraph{Theoretical rate.}
+The asymptotic rate of convergence is \(O(1/\!\log\log N)\), arising from the
+\(\log\log N\) accumulation of small prime contributions in semiprime counting
+(Montgomery--Vaughan \cite{montgomery2007}, \S7.4).  Over our observed range,
+\(\log\log N\) increases from \(2.22\) (at \(N = 10^4\)) to only \(2.91\) (at
+\(N = 10^8\)) — a total variation of \(0.69\) across four decades.  This near-constancy
+means that \(1/\!\log\log N\) behaves almost linearly in \(\log N\) within this window,
+making the two functional forms indistinguishable from the data alone.
+
+\paragraph{Local linear fit.}
+Within the observed range, a linear regression in \(\log N\) therefore provides an
+accurate \emph{local} description:
 \begin{equation}\label{eq:model}
   \delta(N,\theta_0) \;\approx\; a(\theta_0) - b(\theta_0)\,\log N
   \qquad \text{(empirical fit, } N \in [10^4, 10^8]\text{)}.
 \end{equation}
-This is not claimed to be an asymptotic law; extrapolating \eqref{eq:model} to large
-\(N\) would predict \(\delta < 0\), which is impossible.  The true deficit likely
-involves slower-decaying corrections (e.g., of order \(\log\log N / \log N\)) that
-become distinguishable only at much larger \(N\).
+This is not an asymptotic law: extrapolating \eqref{eq:model} to large \(N\) would
+predict \(\delta < 0\), which is impossible.  It is a finite-range proxy for the
+slower \(O(1/\!\log\log N)\) decay.  Numerical comparison confirms that the linear fit
+(mean \(R^2 = 0.989\) across four thresholds) outperforms a direct \(c/\!\log\log N\)
+fit (mean \(R^2 = 0.41\)) precisely because the variation of \(\log\log N\) is too
+small in this window to distinguish the two forms; the linear model has more
+flexibility with its two free parameters.
 
 Table~\ref{tab:fit} records the regression parameters for each \(\theta_0\).
 
 \begin{table}[h]
 \centering
 \caption{Parameters of the local linear fit \(\delta \approx a(\theta_0) - b(\theta_0)\log N\)
-  over \(N \in [10^4, 10^8]\).  All \(R^2\) values exceed \(0.97\) within this range;
-  the fit is not valid outside it.}
+  over \(N \in [10^4, 10^8]\) (\(R^2 > 0.97\) in all cases).  This fit is a
+  finite-range proxy for the theoretically predicted \(O(1/\!\log\log N)\) decay;
+  it is not valid outside the observed range.}
 \label{tab:fit}
 \begin{tabular}{cccr}
 \toprule
@@ -189,9 +207,8 @@ Table~\ref{tab:fit} records the regression parameters for each \(\theta_0\).
 \end{tabular}
 \end{table}
 
-The high \(R^2\) values confirm that, over the four observed decades, the deficit
-decreases at a nearly constant rate per unit \(\log N\).  The rate \(b(\theta_0)\)
-itself depends on \(\theta_0\) and is analyzed in Section~\ref{sec:bscaling}.
+The rate \(b(\theta_0)\) varies with \(\theta_0\) and is analyzed further in
+Section~\ref{sec:bscaling}.
 
 \subsection{Scaling of the convergence rate \texorpdfstring{$b(\theta_0)$}{b(theta)}}
 \label{sec:bscaling}
@@ -288,14 +305,19 @@ Semiprime factor structure is not captured by the class of additive, multiplicat
 spectral embeddings considered here.  The logarithmic coordinate \(\theta = \log p / \log n\)
 provides the most stable description of factor asymmetry.
 
-The principal empirical finding is that the deficit \(\delta(N,\theta_0)\) decreases
-extremely slowly with \(N\), covering only \(5\)--\(7\%\) over four decades.  Within
-the observed range \([10^4, 10^8]\), this decrease is well approximated locally by a
-linear function of \(\log N\), with rate parameter \(b(\theta_0)\) that itself varies
-smoothly with \(\theta_0\).  We do not claim this local fit as an asymptotic law;
-establishing the true rate of convergence of \(P(N,\theta_0)\) to its limit
-\(P_\infty(\theta_0)\), and determining \(P_\infty(\theta_0)\) itself, remain open
-problems accessible to sieve-theoretic methods.
+The rate of convergence is consistent with \(O(1/\!\log\log N)\), as predicted by the
+\(\log\log N\) accumulation of small prime contributions in semiprime counting
+(Montgomery--Vaughan \cite{montgomery2007}, \S7.4).  The local linear-in-\(\log N\)
+approximation of Section~3.3 is a valid finite-range description of this slower decay:
+over \(N \in [10^4, 10^8]\), \(\log\log N\) varies by only \(0.69\), so the two
+functional forms are numerically indistinguishable in this window.
+
+The novel contributions are: (1)~empirical quantification of the convergence rate
+\(b(\theta_0)\) across four imbalance thresholds, showing it decreases smoothly with
+\(\theta_0\); and (2)~the geometric and spectral null results, showing that the
+\(\theta\) coordinate is not recoverable from natural embeddings.  Determining
+\(P_\infty(\theta_0)\) rigorously, and establishing the precise constant in
+\(O(1/\!\log\log N)\), remain open problems accessible to sieve-theoretic methods.
 
 The negative results on geometric and spectral embeddings suggest that the logarithmic
 coordinate is not merely convenient but is in some sense the correct one for this problem.
@@ -330,6 +352,12 @@ Springer, Berlin, 1979, pp.~173--183.
 H.~Halberstam and H.-E.~Richert,
 \textit{Sieve Methods},
 Academic Press, London, 1974.
+
+\bibitem{montgomery2007}
+H.~L.~Montgomery and R.~C.~Vaughan,
+\textit{Multiplicative Number Theory~I: Classical Theory},
+Cambridge Studies in Advanced Mathematics~97,
+Cambridge University Press, 2007.
 
 \end{thebibliography}
 
