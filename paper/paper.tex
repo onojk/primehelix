@@ -22,6 +22,15 @@ The deficit \(\delta(N,\theta_0) = P_\infty(\theta_0) - P(N,\theta_0)\) remains
 substantial even at \(N = 10^8\), consistent with \(O(1/\!\log\log N)\) decay arising
 from the \(\log\log N\) accumulation of small prime contributions
 (Montgomery--Vaughan \cite{montgomery2007}, \S7.4).
+A Chebyshev-corrected analysis of the counting sum
+$\sum_{p \leq N^{\theta_0}} \pi(N/p)$ yields the refined prefactor
+\[
+  f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + \tfrac{1}{2},
+\]
+which reduces the relative error in predicting
+$b_{\mathrm{eff}} = \delta\cdot\log\log N$ from up to \(4.3\times\) (naive Mertens)
+to under \(1.21\times\) across eight thresholds
+\(\theta_0 \in \{0.10,\ldots,0.45\}\) (Section~\ref{sec:corrected}).
 Over the observed range \(N \in [10^4, 10^8]\), \(\log\log N\) varies only from
 \(2.22\) to \(2.91\), a range too narrow to distinguish \(1/\!\log\log N\) decay from
 a local linear fit in \(\log N\).  Accordingly, the deficit is well approximated
@@ -238,6 +247,97 @@ should be understood as summaries of the observed behavior, not as laws with the
 backing.  Extending the table to additional \(\theta_0\) values and larger \(N\) would
 be needed to discriminate between functional forms.
 
+\subsection{Corrected prefactor via Chebyshev's prime sum theorem}
+\label{sec:corrected}
+
+The naive application of Mertens' theorem to the semiprime counting sum predicts a
+leading prefactor of $\log(1/\theta_0)$ in the $O(1/\!\log\log N)$ deficit.  We
+derive a sharper formula using Chebyshev's prime sum theorem.
+
+\paragraph{Setup.}
+Define
+\[
+  T(N) = \!\sum_{p\leq\sqrt{N}}\!\bigl(\pi(N/p) - \pi(p-1)\bigr), \qquad
+  L(N,\theta_0) = \!\sum_{p\leq N^{\theta_0}}\!\bigl(\pi(N/p) - \pi(p-1)\bigr),
+\]
+so that $P(N,\theta_0) = L(N,\theta_0)/T(N)$ and
+$\delta = 1 - L/T = (T - L)/T$.
+
+\paragraph{Naive approximation.}
+Replacing $\pi(x) \approx x/\log x$ and approximating $\log(N/p) \approx \log N$ gives
+$\sum_{p\leq x} N/(p\log N) \approx (N/\log N)\log\log x$ via Mertens' theorem, and hence
+\[
+  \delta \;\approx\; \frac{\log(1/\theta_0)}{\log\log N}.
+\]
+
+\paragraph{Chebyshev correction.}
+The step $\log(N/p)\approx\log N$ discards $\log p$.  The correction is captured by
+Chebyshev's theorem
+\[
+  \sum_{p \leq x}\frac{\log p}{p} = \log x + O(1).
+\]
+Expanding $N/\bigl(p\log(N/p)\bigr) = (N/\log N)\cdot\bigl(1 - \log p/\log N\bigr)^{-1}$
+to first order and summing by Abel's method yields
+\[
+  \sum_{p\leq x}\frac{N}{p\log(N/p)}
+  \;\approx\; \frac{N}{\log N}\!\left[\log\log x + M + \frac{\log x}{\log N}\right],
+\]
+where $M\approx 0.2615$ is the Meissel--Mertens constant.
+The extra term $\log x/\log N$ equals $\tfrac{1}{2}$ when $x = \sqrt{N}$
+and $\theta_0$ when $x = N^{\theta_0}$.  Inserting these values:
+\begin{align*}
+  T(N) &\;\approx\; \frac{N}{\log N}\!\left[\log\log N - \log 2 + M + \tfrac{1}{2}\right], \\[4pt]
+  L(N,\theta_0) &\;\approx\; \frac{N}{\log N}\!\left[\log\log N + \log\theta_0 + M + \theta_0\right].
+\end{align*}
+
+\paragraph{Corrected prefactor.}
+Subtracting and dividing:
+\begin{equation}\label{eq:prefactor}
+  \delta(N,\theta_0) \;\approx\;
+  \frac{f(\theta_0)}{\log\log N + c},
+  \qquad
+  \boxed{f(\theta_0) = \log\!\left(\tfrac{1}{\theta_0}\right) - \theta_0 - \log 2 + \tfrac{1}{2}},
+\end{equation}
+where $c = -\log 2 + M + \tfrac{1}{2} \approx 0.07$ is a small positive constant.
+The corrected prefactor $f(\theta_0)$ replaces $\log(1/\theta_0)$ by accounting for
+the asymmetric Chebyshev contributions at the two cutoffs $\sqrt{N}$ and $N^{\theta_0}$.
+
+\paragraph{Numerical validation.}
+Table~\ref{tab:prefactor} compares both prefactors against the empirically observed
+$b_{\mathrm{eff}} = \delta\cdot\log\log N$, averaged over $N\in[10^4,10^8]$.
+The corrected formula reduces the maximum relative error from $4.3\times$ (naive) to
+under $1.21\times$ (corrected) across all eight thresholds.
+
+\begin{table}[h]
+\centering
+\caption{Empirical $b_{\mathrm{eff}}$ (mean of $\delta\cdot\log\log N$ over
+  $N\in[10^4,10^8]$) vs.\ naive prefactor $\log(1/\theta_0)$ and corrected prefactor
+  $f(\theta_0)=\log(1/\theta_0)-\theta_0-\log 2+\tfrac{1}{2}$.}
+\label{tab:prefactor}
+\begin{tabular}{cccccc}
+\toprule
+$\theta_0$ & $\log(1/\theta_0)$ & $f(\theta_0)$ & $b_{\mathrm{eff}}$
+           & $b_{\mathrm{eff}}/\log(1/\theta_0)$ & $b_{\mathrm{eff}}/f(\theta_0)$ \\
+\midrule
+0.10 & 2.303 & 2.009 & 1.819 & 0.790 & 0.905 \\
+0.15 & 1.897 & 1.554 & 1.465 & 0.772 & 0.943 \\
+0.20 & 1.609 & 1.216 & 1.205 & 0.749 & 0.991 \\
+0.25 & 1.386 & 0.943 & 0.976 & 0.704 & 1.034 \\
+0.30 & 1.204 & 0.711 & 0.763 & 0.634 & 1.074 \\
+0.35 & 1.050 & 0.507 & 0.562 & 0.535 & 1.108 \\
+0.40 & 0.916 & 0.323 & 0.373 & 0.407 & 1.154 \\
+0.45 & 0.799 & 0.155 & 0.187 & 0.234 & 1.202 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The residual monotone trend in $b_{\mathrm{eff}}/f(\theta_0)$ — from $0.90$ at
+$\theta_0=0.10$ to $1.20$ at $\theta_0=0.45$ — reflects two effects not captured
+at this order: (i)~discrete activation thresholds ($p$ contributes only when
+$N \geq p^{1/\theta_0}$, creating step-like jumps in $L$) and (ii)~the breakdown
+of $\log(N/p)\approx\log N$ when $p$ is not small relative to $N^{\theta_0}$.
+Both are subleading corrections of order $O(\theta_0/\!\log\log N)$.
+
 \section{Geometric and Spectral Tests}
 
 We tested several candidate embeddings:
@@ -314,10 +414,19 @@ functional forms are numerically indistinguishable in this window.
 
 The novel contributions are: (1)~empirical quantification of the convergence rate
 \(b(\theta_0)\) across four imbalance thresholds, showing it decreases smoothly with
-\(\theta_0\); and (2)~the geometric and spectral null results, showing that the
-\(\theta\) coordinate is not recoverable from natural embeddings.  Determining
-\(P_\infty(\theta_0)\) rigorously, and establishing the precise constant in
-\(O(1/\!\log\log N)\), remain open problems accessible to sieve-theoretic methods.
+\(\theta_0\); (2)~the geometric and spectral null results, showing that the
+\(\theta\) coordinate is not recoverable from natural embeddings; and
+(3)~a Chebyshev-corrected prefactor formula
+\(f(\theta_0) = \log(1/\theta_0) - \theta_0 - \log 2 + \tfrac{1}{2}\)
+(Section~\ref{sec:corrected}), which substantially sharpens the naive Mertens
+prediction and identifies the dominant source of the prefactor gap as asymmetric
+Chebyshev sums at the two cutoffs $\sqrt{N}$ and $N^{\theta_0}$.
+The formula accounts for the observation that $T(N)$ sums to $\sqrt{N}$ (contributing
+$+\tfrac{1}{2}$ via Chebyshev) while $L(N,\theta_0)$ sums to $N^{\theta_0}$
+(contributing $+\theta_0$).
+Determining \(P_\infty(\theta_0)\) rigorously, and establishing the precise constant
+in \(O(1/\!\log\log N)\) including subleading terms, remain open problems accessible
+to sieve-theoretic methods.
 
 The negative results on geometric and spectral embeddings suggest that the logarithmic
 coordinate is not merely convenient but is in some sense the correct one for this problem.
