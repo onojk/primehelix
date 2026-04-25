@@ -1,36 +1,75 @@
+# =========================
 # Python
+# =========================
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 *.pyd
+*.pyc.*
+*.so
 
 # Virtual environments
 .venv/
 venv/
-.env
+env/
 
-# Packaging / build
-*.egg-info/
-dist/
-build/
+# =========================
+# System / OS files
+# =========================
+.DS_Store
+Thumbs.db
 
-# Testing
-.pytest_cache/
-
-# Data / artifacts
-*.csv
-*.csv.gz
-*.ckpt
-!datasets/*.csv
-!literature_check_results.csv
-
-# Media / generated outputs
-media/
-*.png
-!docs/*.png
-!paper/*.png
-
-# Logs
+# =========================
+# Logs / temp
+# =========================
 *.log
-.cache/
-*.pkl
+nohup.out
+
+# =========================
+# Build / packaging
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Data / large outputs
+# =========================
+*.csv
+*.tsv
+
+# =========================
+# Images (default: ignore all)
+# =========================
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+
+# =========================
+# Paper / LaTeX artifacts
+# =========================
+paper/*.aux
+paper/*.out
+paper/*.log
+paper/*.toc
+
+# =========================
+# Local research / scratch
+# =========================
+tenenbaum_snippets/
+*.txt
+
+# =========================
+# Allow curated figures ONLY
+# =========================
+!figures/
+!figures/*.png
+
+# =========================
+# Allow specific important scripts (optional)
+# =========================
+!activation_steps.py
+!visualize_activation_thresholds.py
+!visualize_activation_thresholds_v2.py
