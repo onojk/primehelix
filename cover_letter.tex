@@ -1,0 +1,48 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\begin{document}
+
+\noindent The Editors\\
+\textit{Integers: Electronic Journal of Combinatorial Number Theory}
+
+\bigskip
+
+Dear Editors,
+
+We study the coordinate \(\theta = \log p / \log n\) for semiprimes \(n = pq\)
+(\(p \leq q\)), where \(\theta\) encodes the relative size of the smaller prime
+factor in a scale-invariant way.  Our main results are: (1) the proportion
+\(P(N, \theta_0)\) of semiprimes with \(\theta \leq \theta_0\) converges
+extremely slowly --- consistent with \(O(1/\!\log\log N)\) decay --- documented
+by exact enumeration to \(N = 10^8\); (2) discrete prime activation thresholds
+at \(N = p^{1/\theta_0}\) produce step-like jumps in \(P(N, \theta_0)\), a
+novel structural feature not captured by smooth asymptotic models; (3) a
+second-order heuristic prefactor \(f(\theta_0) = \log(1/\theta_0) - \theta_0 -
+\log 2 + \tfrac{1}{2}\) reduces the naive Mertens prediction error from
+\(4.3\times\) to under \(1.21\times\) across \(\theta_0 \in [0.10, 0.45]\);
+and (4) several natural geometric and spectral embeddings (additive phase
+wrapping, multiplicative phase maps, spectral fingerprint, factor-ratio
+spectrum) all fail to recover the structure carried by \(\theta\), consistent
+with a separation principle.  All results are independently verified by exact
+smallest-prime-factor sieve enumeration, with code and data available at
+\url{https://github.com/onojk/primehelix}.
+
+The paper is empirical and combinatorial in character, self-contained, and
+computationally grounded with theoretical anchoring via Montgomery--Vaughan
+(\S7.4) and Mertens' theorem.  The activation threshold observation and the
+refined prefactor conjecture are novel contributions directly accessible to the
+readership of \textit{Integers}.  The paper is approximately 14 pages including
+appendices.
+
+This paper is not under review elsewhere and has not been previously published.
+All data and code are publicly available at the repository linked above.  The
+author consents to open-access publication under the journal's standard terms.
+
+\bigskip
+\noindent Sincerely,\\[4pt]
+Jonathan Kendall\\
+\url{https://github.com/onojk/primehelix}
+
+\end{document}
