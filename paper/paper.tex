@@ -13,7 +13,7 @@
 \usepackage{caption}
 
 % Search both paper/ directory and repo root for figures
-\graphicspath{{./}{../}}
+\graphicspath{{./}{../}{../figures/}}
 
 % Hyperref setup
 \hypersetup{
@@ -158,7 +158,17 @@ size of the smallest prime factor but do not address the normalized coordinate
 
 The present work complements this literature by providing:
 \begin{itemize}
-  \item empirical evidence for the limiting distribution of \(\theta\),
+  \item empirical evidence for the limiting distribution of \(\theta\),%
+\footnote{The PrimeHelix tool (\url{https://github.com/onojk/primehelix})
+uses an alternative lopsidedness criterion based on the geometric
+balance condition $(q/p - 1)/\sqrt{q/p} = 10$, giving a ratio
+threshold $r = q/p \geq 101.99$.  This is a ratio-based (absolute)
+criterion, in contrast to the projective criterion $\theta \leq
+\theta_0$ used in this paper.  The two notions coincide only
+approximately, with the ratio boundary corresponding to
+$\theta \approx 0.33$--$0.38$ depending on $\log n$.  The
+projective coordinate $\theta$ is preferred here because it is
+scale-invariant and admits a clean asymptotic analysis.},
   \item a novel activation-threshold mechanism,
   \item a refined heuristic prefactor for the deficit,
   \item and negative results for several alternative embeddings.
