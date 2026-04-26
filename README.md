@@ -14,6 +14,24 @@ maps, spectral fingerprint, factor-ratio spectrum) all fail to recover the struc
 carried by θ, consistent with a separation principle: factor asymmetry is not recoverable
 from any function of n alone that is multiplicative or additive in log-space.
 
+## Paper
+
+**"On the Distribution of Smaller Factors in Semiprimes:
+Discrete Activation Thresholds, Slow Convergence, and a
+Refined Heuristic"** — Jonathan Kendall, 2026
+
+[📄 Read the paper (PDF)](paper/paper.pdf) |
+[Submitted to *Integers: Electronic Journal of
+Combinatorial Number Theory*]
+
+To reproduce all paper results exactly:
+```
+python3 scripts/verify_semiprime_tables.py
+```
+
+The PrimeHelix toolkit (CLI, visualizations, structure-scan)
+is a separate research tool built alongside the paper.
+
 ## Requirements
 - Python 3.8+, numpy, scipy, matplotlib
 - ~400 MB RAM for SPF sieve to N = 1e8
@@ -31,11 +49,6 @@ python3 scripts/verify_semiprime_tables.py
 - results/table1.csv, table2.csv, table3.csv
 - activation_theta_0_10.png
 - stabilisation.png
-
-## Paper
-```
-cd paper && pdflatex paper.tex && pdflatex paper.tex
-```
 
 ## Verified checksums (exact, no sampling)
 - 210,035 semiprimes ≤ 1e6
