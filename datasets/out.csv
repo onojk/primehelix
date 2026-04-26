@@ -1,0 +1,11 @@
+n,classification,structure
+10,semiprime,semiprime | moderate | mod4_2x1
+11,prime,prime | gaussian
+12,composite,composite
+13,prime,prime | pythagorean
+14,semiprime,semiprime | moderate | mod4_2x3
+15,semiprime,semiprime | moderate | mod4_1x3
+16,composite,composite
+17,prime,prime | pythagorean
+18,composite,composite
+19,prime,prime | gaussian

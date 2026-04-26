@@ -21,11 +21,11 @@ from any function of n alone that is multiplicative or additive in log-space.
 
 ## Reproduce all results
 ```
-python3 verify_semiprime_tables.py
+python3 scripts/verify_semiprime_tables.py
 ```
 
-`verify_semiprime_tables.py` is the canonical script (commit fc43ef0).
-`verify_paper_tables.py` is an earlier version kept for reference only.
+`scripts/verify_semiprime_tables.py` is the canonical script (commit fc43ef0).
+`scripts/verify_paper_tables.py` is an earlier version kept for reference only.
 
 ## Outputs
 - results/table1.csv, table2.csv, table3.csv
@@ -44,9 +44,10 @@ cd paper && pdflatex paper.tex && pdflatex paper.tex
 
 ## Repository structure
 ```
-paper/          — paper.tex, paper.pdf (canonical)
+paper/          — paper.tex, cover_letter.tex, paper.pdf (canonical)
 paper/drafts/   — earlier draft versions
-results/        — CSV outputs from verification
-verify_semiprime_tables.py  — canonical verification script
-cover_letter.tex            — Integers journal submission
+scripts/        — all Python and shell scripts
+figures/        — all generated plots
+datasets/       — raw data CSVs and JSON
+results/        — CSV outputs from verification script
 ```

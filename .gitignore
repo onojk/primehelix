@@ -23,6 +23,7 @@ Thumbs.db
 # Logs / temp
 # =========================
 *.log
+texput.log
 nohup.out
 
 # =========================
@@ -80,8 +81,14 @@ media/
 # =========================
 !results/
 !results/*.csv
-!stabilisation_extended.png
 !paper/*.png
+
+# =========================
+# Allow datasets
+# =========================
+!datasets/
+!datasets/*.csv
+!datasets/*.json
 
 # =========================
 # Allow specific important scripts (optional)
