@@ -42,14 +42,14 @@ jobs:
       - name: Smoke test exact counts (FAST_MODE)
         run: |
           . .venv/bin/activate
-          FAST_MODE=1 python exact_lopsided_counts.py > /dev/null
+          FAST_MODE=1 python scripts/exact_lopsided_counts.py > /dev/null
 
       - name: Generate plots
         run: |
           . .venv/bin/activate
-          python plot_lopsided_convergence.py
-          python plot_multi_theta.py
-          python plot_multi_theta_delta.py
+          python scripts/plot_lopsided_convergence.py
+          python scripts/plot_multi_theta.py
+          python scripts/plot_multi_theta_delta.py
 
       - name: Upload plots
         uses: actions/upload-artifact@v4
