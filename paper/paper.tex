@@ -394,8 +394,8 @@ slowly: at \(\theta_0 = 0.25\) the deficit falls only from \(40.72\%\) to \(35.0
 as \(N\) grows by four orders of magnitude.
 
 \paragraph{Theoretical rate.}
-For related semiprime counting functions (see Montgomery--Vaughan~\cite{montgomery2007},
-\S7.4) the asymptotic rate is known to involve \(O(1/\!\log\log N)\) decays,
+For related semiprime counting functions (see Montgomery--Vaughan~\cite{montgomery2007})
+the asymptotic rate is known to involve \(O(1/\!\log\log N)\) decays,
 arising from the \(\log\log N\) accumulation of small prime contributions.
 Our data for \(\delta(N,\theta_0)\) are consistent with such a rate, though a rigorous
 proof for this normalized coordinate is not given here.
@@ -618,7 +618,12 @@ Models tested: \(A\theta_0\) (S1), \(A\theta_0^2\) (S2),
 \(A = -0.0432\) and \(R^2 = 0.32\); no model achieves \(R^2 > 0.97\).
 The residuals change sign near \(\theta_0 \approx 0.20\) (negative for small
 \(\theta_0\), positive for large), a pattern that no single monotone predictor
-can capture.  The subleading correction structure remains open.
+can capture.  The residual structure reflects a superposition of prime-indexed
+activation events and is therefore not expected to admit a
+low-dimensional parametric model; the sign change near
+\(\theta_0 \approx 0.20\) is consistent with the transition between
+small-\(p\) and large-\(p\) dominated activation regimes.
+The subleading correction structure remains open.
 
 \begin{remark}
 \(f(\theta_0)\) approaches zero near \(\theta_0 \approx 0.47\); the \(1.21\times\)
@@ -829,6 +834,10 @@ Several natural extensions remain:
         \(u = \theta \log\log N\) (see Appendix~\ref{app:boundary}).
   \item Prove the separation principle (Section~\ref{sec:separation}).
   \item Extend the analysis to \(k\)-almost primes (\(k \ge 3\)).
+  \item Test whether \(P(\theta \le \theta_0) \approx 1 - \rho(1/\theta_0)\)
+        holds approximately, where \(\rho\) is the Dickman function; if so,
+        this would connect the deficit directly to the classical smooth-number
+        literature.
 \end{itemize}
 
 Proving Conjecture~\ref{conj:prefactor}, characterising the subleading correction
